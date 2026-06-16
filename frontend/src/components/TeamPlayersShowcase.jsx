@@ -16,8 +16,9 @@ const DEFAULT_ROSTER = [
 ];
 
 const ROLES = [
-  'Captain', 'Setter', 'Spiker', 'Libero', 'Blocker',
-  'Outside Hitter', 'Opposite', 'Middle Blocker', 'Defensive Specialist', 'Serving Specialist',
+  'Captain', 'Setter', 'Spiker/Attacker', 'Libero', 'Blocker',
+  'Outside Hitter', 'Opposite Hitter', 'Middle Blocker', 'Defensive Specialist', 'Serving Specialist',
+  "Middle",
 ];
 
 const STORAGE_KEY = 'volleytrack_team_roster';
