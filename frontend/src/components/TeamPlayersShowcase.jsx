@@ -48,11 +48,11 @@ function statusMeta(s) { return STATUS_META[s] || STATUS_META['Offline']; }
 const ROLE_COLORS = {
   'Captain':              { gradient: 'from-yellow-500 to-amber-600',    bg: '#b45309', accent: '#fbbf24', icon: '👑' },
   'Setter':               { gradient: 'from-blue-500 to-cyan-600',       bg: '#0e7490', accent: '#38bdf8', icon: '🎯' },
-  'Spiker':               { gradient: 'from-red-500 to-orange-600',      bg: '#b91c1c', accent: '#f87171', icon: '⚡' },
+  'Spiker/Attacker':      { gradient: 'from-red-500 to-orange-600',      bg: '#b91c1c', accent: '#f87171', icon: '⚡' },
   'Libero':               { gradient: 'from-purple-500 to-indigo-600',   bg: '#5b21b6', accent: '#c084fc', icon: '🛡️' },
   'Blocker':              { gradient: 'from-green-500 to-teal-600',      bg: '#065f46', accent: '#34d399', icon: '🧱' },
   'Outside Hitter':       { gradient: 'from-pink-500 to-rose-600',       bg: '#9f1239', accent: '#fb7185', icon: '💥' },
-  'Opposite':             { gradient: 'from-fuchsia-500 to-violet-600',  bg: '#6b21a8', accent: '#e879f9', icon: '🔄' },
+  'Opposite Hitter':      { gradient: 'from-fuchsia-500 to-violet-600',  bg: '#6b21a8', accent: '#e879f9', icon: '🔄' },
   'Middle Blocker':       { gradient: 'from-sky-500 to-blue-600',        bg: '#1e40af', accent: '#60a5fa', icon: '🏔️' },
   'Defensive Specialist': { gradient: 'from-teal-500 to-emerald-600',    bg: '#134e4a', accent: '#2dd4bf', icon: '🔒' },
   'Serving Specialist':   { gradient: 'from-orange-500 to-red-600',      bg: '#9a3412', accent: '#fb923c', icon: '🚀' },
