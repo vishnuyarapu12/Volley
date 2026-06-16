@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { ChevronLeft, ChevronRight, Sparkles, RefreshCw } from 'lucide-react';
-import { playerAPI, getMomentImageUrl } from '../utils/api';
+import { momentImages } from '../utils/momentImages';
 import { pickRandomTitle, formatMomentLabel } from '../utils/momentsTitles';
 
 const DISPLAY_MS = 1700;
@@ -90,25 +90,14 @@ export default function MomentsShowcase({ hero = false }) {
   );
 
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const data = await playerAPI.getMomentsImages();
-        if (cancelled) return;
-        const list = (data.images || []).map((img, i) => ({
-          ...img,
-          src: getMomentImageUrl(img.filename),
-          label: formatMomentLabel(img.filename, i),
-        }));
-        setImages(list);
-        if (list.length > 0) bumpRandomTitle();
-      } catch (err) {
-        console.error('Moments load error:', err);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => { cancelled = true; };
+    // Build slides from locally imported moment images (no backend call)
+    const list = momentImages.map((img, i) => ({
+      ...img,
+      label: formatMomentLabel(img.filename, i),
+    }));
+    setImages(list);
+    if (list.length > 0) bumpRandomTitle();
+    setLoading(false);
   }, [bumpRandomTitle]);
 
   useEffect(() => {
@@ -154,7 +143,8 @@ export default function MomentsShowcase({ hero = false }) {
         <Sparkles className="mx-auto text-gray-500 mb-4" size={40} />
         <p className="text-lg font-semibold text-gray-300">No moments yet</p>
         <p className="text-sm text-gray-500 mt-2">
-          Add photos to the <code className="text-yellow-400/80">./images</code> folder
+          Add photos to the <code className="text-yellow-400/80">src/moments_img</code> folder
+          and register them in <code className="text-yellow-400/80">src/utils/momentImages.js</code>
         </p>
       </div>
     );

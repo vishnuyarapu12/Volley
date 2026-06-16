@@ -6,7 +6,7 @@ export default defineConfig({
   server: {
     port: 3000,
     proxy: {
-      // All API calls (including /api/images and /api/player_img) proxied here
+      // All JSON API calls go through /api → backend /api/*
       '/api': {
         target: 'http://localhost:5000',
         changeOrigin: true,
@@ -15,6 +15,8 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
-    sourcemap: true
+    sourcemap: true,
+    // Ensure assets from public/ are copied as-is (default behaviour, explicit for clarity)
+    assetsDir: 'assets',
   }
 });

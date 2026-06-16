@@ -53,17 +53,6 @@ export const playerAPI = {
     }
   },
 
-  // Moments gallery images from ./images folder
-  getMomentsImages: async () => {
-    try {
-      const response = await api.get('/images/list');
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching moments images:', error);
-      throw error;
-    }
-  },
-
   // Live map: ground + online players with GPS
   getMapData: async () => {
     try {
@@ -241,13 +230,6 @@ export const storage = {
 
   setDarkMode: (enabled) => localStorage.setItem('volleytrack_dark_mode', enabled),
   isDarkModeEnabled: () => localStorage.getItem('volleytrack_dark_mode') !== 'false'
-};
-
-/** URL for an image served from backend ./images */
-export const getMomentImageUrl = (filename) => {
-  const path = `/images/${encodeURIComponent(filename)}`;
-  if (!API_BASE_URL) return path;          // dev proxy handles it
-  return `${API_BASE_URL}${path}`;
 };
 
 export default api;

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { playerAPI } from '../utils/api';
+import { getPlayerImage } from '../utils/playerImages';
 
 // ─── Editable player roster ───────────────────────────────────────────────────
 const DEFAULT_ROSTER = [
@@ -248,13 +249,9 @@ function EditModal({ player, onSave, onClose }) {
           <div className={`w-10 h-10 rounded-full overflow-hidden border-2 flex-shrink-0`}
                style={{ borderColor: previewMeta.accent + '88' }}>
             <img
-              src={`/player_img/${player.img}`}
+              src={getPlayerImage(player.img) || `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' fill='%23334155'/%3E%3Ctext x='20' y='26' font-size='18' text-anchor='middle' fill='%23fbbf24' font-family='sans-serif'%3E${encodeURIComponent(player.name[0])}%3C/text%3E%3C/svg%3E`}
               alt={player.name}
               className="w-full h-full object-cover object-top"
-              onError={e => {
-                e.target.onerror = null;
-                e.target.src = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' fill='%23334155'/%3E%3Ctext x='20' y='26' font-size='18' text-anchor='middle' fill='%23fbbf24' font-family='sans-serif'%3E${encodeURIComponent(player.name[0])}%3C/text%3E%3C/svg%3E`;
-              }}
             />
           </div>
           <div>
@@ -440,14 +437,10 @@ function PlayerCard({ player, index, liveStatus, stats, editMode, onEdit }) {
             <div className={`relative w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden border-2 transition-all duration-300 ${isOnline ? `border-current ${sm.text} shadow-lg ${sm.ring}` : 'border-white/15'}`}
                  style={isOnline ? { boxShadow: `0 0 12px 2px ${sm.dot.includes('green') ? '#4ade80' : sm.dot.includes('yellow') ? '#facc15' : sm.dot.includes('orange') ? '#fb923c' : '#9ca3af'}55` } : {}}>
               <img
-                src={`/player_img/${player.img}`}
+                src={getPlayerImage(player.img) || `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%23334155'/%3E%3Ctext x='32' y='40' font-size='28' text-anchor='middle' fill='%23fbbf24' font-family='sans-serif'%3E${encodeURIComponent(player.name[0])}%3C/text%3E%3C/svg%3E`}
                 alt={player.name}
                 loading="lazy"
                 className="w-full h-full object-cover object-top"
-                onError={e => {
-                  e.target.onerror = null;
-                  e.target.src = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%23334155'/%3E%3Ctext x='32' y='40' font-size='28' text-anchor='middle' fill='%23fbbf24' font-family='sans-serif'%3E${encodeURIComponent(player.name[0])}%3C/text%3E%3C/svg%3E`;
-                }}
               />
             </div>
 

@@ -3,9 +3,9 @@ VolleyTrack - Smart Volleyball Presence Network
 Backend API Server (Flask)
 """
 
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify
 from flask_cors import CORS
-from datetime import datetime, timedelta
+from datetime import datetime
 import math
 import os
 import config
@@ -860,68 +860,9 @@ def get_player_current_location(player_id):
     
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
-
-# ==================== MOMENTS (IMAGE GALLERY) ====================
-
-IMAGES_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'images'))
-PLAYER_IMG_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'player_img'))
-ALLOWED_IMAGE_EXT = {'.jpg', '.jpeg', '.png', '.webp', '.gif'}
-
-
-@api_bp.route('/images/list', methods=['GET'])
-def list_moment_images():
-    """List all images in the project ./images folder."""
-    try:
-        if not os.path.isdir(IMAGES_DIR):
-            return jsonify({"success": True, "images": [], "count": 0}), 200
-
-        files = sorted(
-            f for f in os.listdir(IMAGES_DIR)
-            if os.path.splitext(f)[1].lower() in ALLOWED_IMAGE_EXT
-        )
-        images = [
-            {"filename": name, "url": f"/images/{name}"}
-            for name in files
-        ]
-        return jsonify({"success": True, "images": images, "count": len(images)}), 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-
-@api_bp.route('/images/<path:filename>', methods=['GET'])
-def serve_moment_image(filename):
-    """Serve a single image from ./images."""
-    try:
-        safe_name = os.path.basename(filename)
-        if os.path.splitext(safe_name)[1].lower() not in ALLOWED_IMAGE_EXT:
-            return jsonify({"error": "Invalid image type"}), 400
-        return send_from_directory(IMAGES_DIR, safe_name)
-    except FileNotFoundError:
-        return jsonify({"error": "Image not found"}), 404
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-
-# ==================== PLAYER PROFILE IMAGES ====================
 @app.route("/")
 def home():
     return "Volley Backend Running"
-
-@api_bp.route('/player_img/<path:filename>', methods=['GET'])
-def serve_player_image(filename):
-    """Serve a player profile photo from ./player_img."""
-    try:
-        safe_name = os.path.basename(filename)
-        if os.path.splitext(safe_name)[1].lower() not in ALLOWED_IMAGE_EXT:
-            return jsonify({"error": "Invalid image type"}), 400
-        if not os.path.isdir(PLAYER_IMG_DIR):
-            return jsonify({"error": "Player images directory not found"}), 404
-        return send_from_directory(PLAYER_IMG_DIR, safe_name)
-    except FileNotFoundError:
-        return jsonify({"error": "Image not found"}), 404
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
 
 
 # ==================== ERROR HANDLERS ====================
