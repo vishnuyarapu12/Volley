@@ -1,0 +1,870 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  @apply transition-colors duration-300;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-volleyball-dark;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-volleyball-accent rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-yellow-300;
+}
+
+/* Global styles */
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  @apply bg-volleyball-darker text-gray-100 font-sans;
+}
+
+/* Glassmorphism effect */
+.glass {
+  @apply bg-white/10 backdrop-blur-md border border-white/20 rounded-lg;
+}
+
+.glass-dark {
+  @apply bg-black/30 backdrop-blur-md border border-white/10 rounded-lg;
+}
+
+/* Status badges */
+.status-badge {
+  @apply px-3 py-1 rounded-full text-sm font-semibold;
+}
+
+.status-at-ground {
+  @apply status-badge bg-green-500/20 text-green-300 border border-green-500/30;
+}
+
+.status-nearby {
+  @apply status-badge bg-orange-500/20 text-orange-300 border border-orange-500/30;
+}
+
+.status-on-the-way {
+  @apply status-badge bg-yellow-500/20 text-yellow-300 border border-yellow-500/30;
+}
+
+.status-away {
+  @apply status-badge bg-red-500/20 text-red-300 border border-red-500/30;
+}
+
+.status-offline {
+  @apply status-badge bg-gray-500/20 text-gray-300 border border-gray-500/30;
+}
+
+/* Animated gradient background */
+.bg-gradient-animated {
+  background: linear-gradient(
+    -45deg,
+    #1a1a2e,
+    #0f3460,
+    #16213e,
+    #1a1a2e
+  );
+  background-size: 400% 400%;
+  animation: gradient 15s ease infinite;
+}
+
+@keyframes gradient {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* Animated counter */
+.counter {
+  @apply font-bold text-3xl text-volleyball-accent;
+  animation: countUp 0.5s ease-out;
+}
+
+@keyframes countUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Card animations */
+.card-hover {
+  @apply transition-all duration-300 hover:scale-105 hover:shadow-2xl;
+}
+
+.card-glow {
+  @apply shadow-lg shadow-volleyball-accent/20;
+}
+
+/* Button styles */
+.btn-primary {
+  @apply px-6 py-3 bg-volleyball-accent text-volleyball-darker font-bold rounded-lg hover:bg-yellow-300 transition-all duration-300 hover:shadow-lg hover:shadow-volleyball-accent/50 active:scale-95;
+}
+
+.btn-secondary {
+  @apply px-6 py-3 bg-volleyball-dark border-2 border-volleyball-accent text-volleyball-accent font-bold rounded-lg hover:bg-volleyball-accent hover:text-volleyball-darker transition-all duration-300;
+}
+
+.btn-small {
+  @apply px-3 py-1 text-sm bg-volleyball-accent text-volleyball-darker font-semibold rounded hover:bg-yellow-300 transition-all;
+}
+
+/* Input styles */
+.input-field {
+  @apply w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-gray-100 placeholder-gray-400 focus:outline-none focus:border-volleyball-accent focus:ring-2 focus:ring-volleyball-accent/30;
+}
+
+/* Progress bar */
+.progress-bar {
+  @apply h-3 bg-white/10 rounded-full overflow-hidden;
+}
+
+.progress-fill {
+  @apply h-full bg-gradient-to-r from-volleyball-accent to-yellow-300 rounded-full;
+  animation: slideIn 0.5s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    width: 0;
+  }
+}
+
+/* Loading spinner */
+.spinner {
+  @apply border-4 border-white/20 border-t-volleyball-accent rounded-full w-8 h-8 animate-spin;
+}
+
+/* Responsive grid */
+@screen sm {
+  .grid-auto {
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  }
+}
+
+@screen md {
+  .grid-auto {
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  }
+}
+
+/* Mobile menu */
+.mobile-menu {
+  @apply fixed bottom-0 left-0 right-0 bg-volleyball-dark border-t border-white/20;
+}
+
+/* Smooth fade in */
+.fade-in {
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── Profile card ───────────────────────────────────────────── */
+.profile-card {
+  @apply backdrop-blur-md border border-white/10 transition-all duration-300;
+  background: linear-gradient(145deg, rgba(255,255,255,0.07), rgba(255,255,255,0.03));
+}
+.profile-card:hover {
+  @apply border-yellow-400/40 shadow-xl;
+  box-shadow: 0 8px 32px rgba(251,191,36,0.15);
+  transform: translateY(-4px) scale(1.02);
+}
+
+/* ── Lightbox backdrop ──────────────────────────────────────── */
+.lightbox-backdrop {
+  background: rgba(0,0,0,0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  animation: lightboxBackdropIn 0.2s ease-out;
+}
+@keyframes lightboxBackdropIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.lightbox-panel {
+  background: linear-gradient(160deg, #1e293b 0%, #0f172a 100%);
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+@keyframes lightboxIn {
+  from { opacity: 0; transform: scale(0.92) translateY(20px); }
+  to   { opacity: 1; transform: scale(1)   translateY(0); }
+}
+.animate-lightboxIn {
+  animation: lightboxIn 0.3s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+
+@keyframes lightboxImgIn {
+  from { opacity: 0; transform: scale(1.04); }
+  to   { opacity: 1; transform: scale(1); }
+}
+.animate-lightboxImgIn {
+  animation: lightboxImgIn 0.35s ease-out both;
+}
+
+/* ── Upload modal ───────────────────────────────────────────── */
+.upload-modal {
+  background: linear-gradient(160deg, #1e293b 0%, #0f172a 100%);
+  border: 1px solid rgba(255,255,255,0.1);
+}
+.drop-zone {
+  background: rgba(255,255,255,0.02);
+}
+
+/* ── Card reveal stagger ────────────────────────────────────── */
+@keyframes cardReveal {
+  from { opacity: 0; transform: translateY(24px) scale(0.95); }
+  to   { opacity: 1; transform: translateY(0)    scale(1); }
+}
+.animate-cardReveal {
+  opacity: 0;
+  animation: cardReveal 0.4s cubic-bezier(0.34,1.4,0.64,1) forwards;
+}
+
+/* ── Animated float (join page emoji) ─────────────────────── */
+@keyframes floatAnim {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-12px); }
+}
+.animate-float {
+  animation: floatAnim 3s ease-in-out infinite;
+}
+
+/* ── Fade in (reusable) ─────────────────────────────────────── */
+@keyframes fadeInAnim {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-fadeIn {
+  animation: fadeInAnim 0.35s ease-out both;
+}
+
+/* Animate slide up (join page card) */
+.animate-slideUp {
+  animation: slideUp 0.5s cubic-bezier(0.34,1.3,0.64,1) 0.1s both;
+}
+
+/* Toast notifications */
+.toast {
+  @apply fixed bottom-4 right-4 px-4 py-3 bg-volleyball-accent text-volleyball-darker rounded-lg shadow-lg z-50 animate-bounce-slow;
+}
+
+/* Map container */
+.map-container {
+  @apply w-full h-96 rounded-lg overflow-hidden border border-white/20;
+}
+
+/* Full-viewport map page (sits above fixed bottom nav) */
+.map-page-shell {
+  display: flex;
+  flex-direction: column;
+  height: calc(100dvh - var(--app-nav-height, 4.5rem));
+  max-height: calc(100dvh - var(--app-nav-height, 4.5rem));
+  overflow: hidden;
+  background: #0a0a12;
+}
+
+.leaflet-map-host {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  background: #0f172a;
+  z-index: 1;
+}
+
+.leaflet-map-host .leaflet-container {
+  width: 100% !important;
+  height: 100% !important;
+  background: #0f172a;
+  font-family: inherit;
+}
+
+/* Player card */
+.player-card {
+  @apply glass p-4 hover:shadow-lg hover:shadow-volleyball-accent/20 transition-all;
+}
+
+/* Status color mapping */
+.status-color-green {
+  @apply text-green-400;
+}
+
+.status-color-yellow {
+  @apply text-yellow-400;
+}
+
+.status-color-orange {
+  @apply text-orange-400;
+}
+
+.status-color-red {
+  @apply text-red-400;
+}
+
+.status-color-gray {
+  @apply text-gray-400;
+}
+
+/* ─── Moments gallery ─────────────────────────────────────────────────── */
+.moments-page {
+  background: #06092b;
+}
+
+.moments-hero-wrap {
+  display: flex;
+  flex-direction: column;
+}
+
+.moments-hero-loading {
+  min-height: calc(100dvh - var(--app-nav-height, 4.5rem));
+}
+
+.moments-hero-empty {
+  min-height: calc(100dvh - var(--app-nav-height, 4.5rem));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin: 1rem;
+  padding-top: 3rem;
+  padding-bottom: 3rem;
+}
+
+.moments-viewer-hero {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.moments-stage {
+  position: relative;
+  overflow: hidden;
+}
+
+.moments-stage-hero {
+  height: calc(100dvh - var(--app-nav-height, 4.5rem) - 2.75rem);
+  min-height: 20rem;
+}
+
+.moments-slide-layer {
+  will-change: opacity, transform;
+  backface-visibility: hidden;
+}
+
+.moments-slide-idle {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+}
+
+.moments-anim-enter-next {
+  animation: momentsEnterNext 0.65s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+}
+
+.moments-anim-enter-prev {
+  animation: momentsEnterPrev 0.65s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+}
+
+.moments-anim-exit-next {
+  animation: momentsExitNext 0.65s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+}
+
+.moments-anim-exit-prev {
+  animation: momentsExitPrev 0.65s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+}
+
+.moments-caption {
+  animation: momentCaptionIn 0.65s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+}
+
+@keyframes momentsEnterNext {
+  from {
+    opacity: 0;
+    transform: translate3d(8%, 0, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes momentsEnterPrev {
+  from {
+    opacity: 0;
+    transform: translate3d(-8%, 0, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes momentsExitNext {
+  from {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    opacity: 0;
+    transform: translate3d(-8%, 0, 0);
+  }
+}
+
+@keyframes momentsExitPrev {
+  from {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    opacity: 0;
+    transform: translate3d(8%, 0, 0);
+  }
+}
+
+.moments-hero-bg {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.06) 0%, transparent 40%, rgba(59, 130, 246, 0.04) 100%);
+  pointer-events: none;
+}
+
+.moments-title-chip {
+  @apply inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-yellow-400/25 bg-yellow-400/5 backdrop-blur-sm;
+  @apply text-sm font-semibold text-yellow-100/95 max-w-full text-center;
+  @apply hover:bg-yellow-400/10 hover:border-yellow-400/40 transition-all duration-500 ease-out;
+}
+
+.moments-title-text {
+  animation: momentTitlePop 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+}
+
+.moments-viewer-glow {
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.35), transparent 40%, rgba(96, 165, 250, 0.2));
+  opacity: 0.5;
+  z-index: 0;
+  pointer-events: none;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  padding: 1px;
+}
+
+.moments-photo-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #0a0e27;
+}
+
+.moments-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+}
+
+.moments-grain {
+  position: absolute;
+  inset: 0;
+  opacity: 0.04;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  pointer-events: none;
+}
+
+.moments-nav-btn {
+  @apply absolute top-1/2 -translate-y-1/2 z-30 p-2.5 rounded-full;
+  @apply bg-black/45 hover:bg-black/65 backdrop-blur-md text-white;
+  @apply border border-white/15 transition-all duration-500 ease-out hover:scale-110;
+}
+
+.moments-progress {
+  animation: momentProgress 2s linear forwards;
+  transform-origin: left;
+}
+
+.moments-filmstrip {
+  scrollbar-width: thin;
+}
+
+.moments-thumb {
+  @apply relative w-[4.5rem] h-[4.5rem] sm:w-20 sm:h-20 rounded-xl overflow-hidden border-2 border-white/10;
+  @apply opacity-75 hover:opacity-100 transition-all duration-500 ease-out;
+}
+
+.moments-thumb-active {
+  @apply border-yellow-400 opacity-100 scale-105 shadow-lg shadow-yellow-400/25;
+}
+
+.moments-thumb-label {
+  @apply absolute bottom-0 left-0 right-0 text-[8px] font-bold text-white bg-black/65 px-1 py-0.5 truncate text-center;
+}
+
+@keyframes momentCaptionIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes momentTitlePop {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes momentProgress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   TEAM PLAYERS SHOWCASE
+═══════════════════════════════════════════════════════════════ */
+
+/* Custom role dropdown scroll */
+.tp-role-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(251,191,36,0.3) transparent;
+}
+.tp-role-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+.tp-role-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.tp-role-scroll::-webkit-scrollbar-thumb {
+  background: rgba(251,191,36,0.3);
+  border-radius: 99px;
+}
+
+/* Slide-in for custom input */
+@keyframes tpSlideIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.tp-slide-in {
+  animation: tpSlideIn 0.22s ease-out both;
+}
+
+/* Card stagger reveal */
+.tp-card-hidden {
+  opacity: 0;
+  transform: translateY(28px) scale(0.94);
+}
+.tp-card-visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+/* Card wrap — fills full column height */
+.tp-card-wrap {
+  height: 100%;
+}
+
+/* The card itself */
+.tp-card {
+  height: 100%;
+  min-height: 190px;
+  cursor: pointer;
+}
+
+/* Hover lift */
+.tp-card-lifted {
+  transform: translateY(-8px) scale(1.04);
+  box-shadow:
+    0 20px 60px rgba(0,0,0,0.6),
+    0 0 30px rgba(251,191,36,0.12),
+    0 0 60px rgba(96,165,250,0.06);
+}
+
+/* Popup slide-up from bottom */
+.tp-popup {
+  animation: tpPopupIn 0.28s cubic-bezier(0.34, 1.3, 0.64, 1) both;
+}
+@keyframes tpPopupIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Jersey badge pulse on hover */
+@keyframes tpJerseyPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(251,191,36,0.7); }
+  50%       { box-shadow: 0 0 0 6px rgba(251,191,36,0); }
+}
+.tp-jersey-pulse {
+  animation: tpJerseyPulse 1.2s ease-in-out infinite;
+}
+
+/* Edit modal pop-in */
+@keyframes tpPopIn {
+  from { opacity: 0; transform: scale(0.88) translateY(20px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* Background blob animations */
+@keyframes tpBlob1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33%       { transform: translate(30px, -20px) scale(1.1); }
+  66%       { transform: translate(-20px, 15px) scale(0.95); }
+}
+@keyframes tpBlob2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33%       { transform: translate(-25px, 20px) scale(1.08); }
+  66%       { transform: translate(20px, -15px) scale(0.97); }
+}
+
+/* Floating particles */
+@keyframes tpFloat {
+  0%   { transform: translateY(0) scale(1); opacity: 0; }
+  10%  { opacity: 1; }
+  90%  { opacity: 0.8; }
+  100% { transform: translateY(-100vh) scale(0.5); opacity: 0; }
+}
+
+/* Slow pulse for status rings */
+@keyframes pingSlowAnim {
+  0%   { transform: scale(1); opacity: 0.8; }
+  75%, 100% { transform: scale(1.6); opacity: 0; }
+}
+.animate-ping-slow {
+  animation: pingSlowAnim 2.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   LIVE VOLLEYBALL SCOREBOARD
+═══════════════════════════════════════════════════════════════ */
+
+/* ── Score digit ── */
+.sb-score-digit {
+  font-size: clamp(4rem, 12vw, 7rem);
+  font-weight: 900;
+  line-height: 1;
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+  will-change: transform, opacity;
+  display: block;
+  text-align: center;
+}
+
+/* Score animate up (+1) */
+@keyframes sbScoreUp {
+  0%   { opacity: 0.2; transform: translateY(28px) scale(0.85); }
+  60%  { opacity: 1;   transform: translateY(-6px) scale(1.08); }
+  100% { opacity: 1;   transform: translateY(0)    scale(1); }
+}
+.sb-score-up {
+  animation: sbScoreUp 0.38s cubic-bezier(0.34, 1.4, 0.64, 1) both;
+}
+
+/* Score animate down (-1) */
+@keyframes sbScoreDown {
+  0%   { opacity: 0.2; transform: translateY(-24px) scale(0.85); }
+  60%  { opacity: 1;   transform: translateY(4px)   scale(1.05); }
+  100% { opacity: 1;   transform: translateY(0)     scale(1); }
+}
+.sb-score-down {
+  animation: sbScoreDown 0.35s cubic-bezier(0.34, 1.4, 0.64, 1) both;
+}
+
+/* ── Score wrap ── */
+.sb-score-wrap {
+  border-radius: 16px;
+  min-height: 110px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── Winner score pulse ── */
+@keyframes sbWinnerPulse {
+  0%, 100% { color: #fff; text-shadow: 0 0 0px #fbbf2400; }
+  50%       { color: #fbbf24; text-shadow: 0 0 30px #fbbf2488; }
+}
+.sb-score-winner .sb-score-digit {
+  animation: sbWinnerPulse 1.4s ease-in-out infinite;
+}
+
+/* ── Winner card glow ── */
+@keyframes sbWinnerGlow {
+  0%, 100% { box-shadow: 0 0 20px rgba(251,191,36,0.2), 0 0 60px rgba(251,191,36,0.05); }
+  50%       { box-shadow: 0 0 40px rgba(251,191,36,0.4), 0 0 80px rgba(251,191,36,0.15); }
+}
+.sb-winner-glow {
+  animation: sbWinnerGlow 2s ease-in-out infinite;
+}
+
+/* ── Deuce banner ── */
+.sb-deuce-banner {
+  background: linear-gradient(135deg, rgba(251,146,60,0.15), rgba(239,68,68,0.1));
+  border: 1px solid rgba(251,146,60,0.35);
+  animation: sbDeucePulse 1.6s ease-in-out infinite;
+}
+@keyframes sbDeucePulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(251,146,60,0.3); border-color: rgba(251,146,60,0.35); }
+  50%       { box-shadow: 0 0 0 8px rgba(251,146,60,0);  border-color: rgba(251,146,60,0.65); }
+}
+
+/* ── Match point banner ── */
+.sb-matchpoint-banner {
+  background: linear-gradient(135deg, rgba(251,191,36,0.1), rgba(245,158,11,0.06));
+  border: 1px solid rgba(251,191,36,0.3);
+  animation: sbMatchPointAnim 1.2s ease-in-out infinite;
+}
+@keyframes sbMatchPointAnim {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(251,191,36,0.25); }
+  50%       { box-shadow: 0 0 0 6px rgba(251,191,36,0); }
+}
+
+/* ── Ripple effect ── */
+.sb-ripple {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.25);
+  transform: scale(0);
+  animation: sbRippleAnim 0.6s linear forwards;
+  pointer-events: none;
+}
+@keyframes sbRippleAnim {
+  to { transform: scale(1); opacity: 0; }
+}
+
+/* ── Trophy bounce (winner screen) ── */
+@keyframes sbTrophyBounce {
+  0%   { transform: translateY(0) scale(1) rotate(0deg); }
+  20%  { transform: translateY(-20px) scale(1.15) rotate(-8deg); }
+  40%  { transform: translateY(0) scale(0.95) rotate(0deg); }
+  60%  { transform: translateY(-10px) scale(1.08) rotate(5deg); }
+  80%  { transform: translateY(0) scale(0.98) rotate(0deg); }
+  100% { transform: translateY(0) scale(1) rotate(0deg); }
+}
+.sb-trophy {
+  animation: sbTrophyBounce 1.2s cubic-bezier(0.34,1.3,0.64,1) both;
+  display: inline-block;
+  filter: drop-shadow(0 0 20px rgba(251,191,36,0.6));
+}
+
+/* ── Winner name entrance ── */
+@keyframes sbWinnerNameIn {
+  from { opacity: 0; transform: translateY(20px) scale(0.9); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.sb-winner-name {
+  animation: sbWinnerNameIn 0.5s 0.3s cubic-bezier(0.34,1.4,0.64,1) both;
+  background: linear-gradient(135deg,#fbbf24,#fff,#fbbf24);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── Floating volleyball (setup & center) ── */
+@keyframes sbBallFloat {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50%       { transform: translateY(-14px) rotate(15deg); }
+}
+.sb-ball-float {
+  display: inline-block;
+  animation: sbBallFloat 3s ease-in-out infinite;
+}
+
+@keyframes sbBallCenter {
+  0%, 100% { transform: translateY(0) rotate(0deg) scale(1); }
+  50%       { transform: translateY(-6px) rotate(180deg) scale(1.05); }
+}
+.sb-ball-center {
+  display: inline-block;
+  animation: sbBallCenter 4s ease-in-out infinite;
+}
+
+/* ── Winner screen entrance ── */
+@keyframes sbWinnerScreenIn {
+  from { opacity: 0; transform: scale(0.96) translateY(16px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+.sb-winner-screen {
+  animation: sbWinnerScreenIn 0.45s cubic-bezier(0.34,1.3,0.64,1) both;
+}
+
+/* ── Team panel ── */
+.sb-team-panel {
+  min-width: 0;
+}
+
+/* ── O Ball banner (score = 23) ── */
+.sb-oball-banner {
+  background: linear-gradient(135deg, rgba(251,146,60,0.12), rgba(234,88,12,0.08));
+  border: 1px solid rgba(251,146,60,0.35);
+  animation: sbOBallPulse 2s ease-in-out infinite;
+}
+@keyframes sbOBallPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(251,146,60,0.2); border-color: rgba(251,146,60,0.35); }
+  50%       { box-shadow: 0 0 0 6px rgba(251,146,60,0);  border-color: rgba(251,146,60,0.55); }
+}
+
+/* ── Game Ball banner (score = 24) ── */
+.sb-gameball-banner {
+  background: linear-gradient(135deg, rgba(251,191,36,0.15), rgba(245,158,11,0.1));
+  border: 1px solid rgba(251,191,36,0.45);
+  animation: sbGameBallPulse 1.2s ease-in-out infinite;
+}
+@keyframes sbGameBallPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(251,191,36,0.35); border-color: rgba(251,191,36,0.45); }
+  50%       { box-shadow: 0 0 0 8px rgba(251,191,36,0);  border-color: rgba(251,191,36,0.75); }
+}
+
