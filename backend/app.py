@@ -898,6 +898,9 @@ def serve_moment_image(filename):
 
 
 # ==================== PLAYER PROFILE IMAGES ====================
+@app.route("/")
+def home():
+    return "Volley Backend Running"
 
 @app.route('/player_img/<path:filename>', methods=['GET'])
 def serve_player_image(filename):
