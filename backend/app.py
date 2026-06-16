@@ -22,6 +22,12 @@ from utils import (
 app = Flask(__name__)
 CORS(app, origins=config.CORS_ORIGINS)
 
+# All routes are registered under /api so the frontend can call
+# fetch(`${VITE_API_URL}/api/...`) in production and the Vite
+# dev proxy rewrites /api → / before hitting Flask locally.
+from flask import Blueprint
+api_bp = Blueprint('api', __name__, url_prefix='/api')
+
 # In-memory storage
 players_db = {}  # {player_id: {name, team, jersey, lat, lon, timestamp, stats}}
 attendance_stats = {}  # {player_id: {visits, last_visit, arrival_times}}
@@ -154,13 +160,13 @@ def get_stats_for_player(player_id):
 
 # ==================== API ENDPOINTS ====================
 
-@app.route('/health', methods=['GET'])
+@api_bp.route('/health', methods=['GET'])
 def health_check():
     """Health check endpoint"""
     return jsonify({"status": "ok", "message": "VolleyTrack Backend Running"})
 
 
-@app.route('/join', methods=['POST'])
+@api_bp.route('/join', methods=['POST'])
 def join_team():
     """
     Register a new player - FAST JOIN
@@ -219,7 +225,7 @@ def join_team():
         return jsonify({"error": str(e)}), 500
 
 
-@app.route('/location-update', methods=['POST'])
+@api_bp.route('/location-update', methods=['POST'])
 def location_update():
     """
     Receive location updates from client.
@@ -307,7 +313,7 @@ def location_update():
         return jsonify({"error": str(e)}), 500
 
 
-@app.route('/location-vote', methods=['POST'])
+@api_bp.route('/location-vote', methods=['POST'])
 def cast_location_vote():
     """
     Player self-reports where they are (like a vote/check-in).
@@ -368,7 +374,7 @@ def cast_location_vote():
         return jsonify({"error": str(e)}), 500
 
 
-@app.route('/location-votes', methods=['GET'])
+@api_bp.route('/location-votes', methods=['GET'])
 def get_location_votes():
     """All players with their location votes and counts per option."""
     try:
@@ -411,7 +417,7 @@ def get_location_votes():
         return jsonify({"error": str(e)}), 500
 
 
-@app.route('/players', methods=['GET'])
+@api_bp.route('/players', methods=['GET'])
 def get_players():
     """Get all active players"""
     try:
@@ -436,7 +442,7 @@ def get_players():
         return jsonify({"error": str(e)}), 500
 
 
-@app.route('/map/data', methods=['GET'])
+@api_bp.route('/map/data', methods=['GET'])
 def get_map_data():
     """Single payload for the live map: ground + all players with GPS."""
     try:
@@ -468,7 +474,7 @@ def get_map_data():
         return jsonify({"error": str(e)}), 500
 
 
-@app.route('/stats', methods=['GET'])
+@api_bp.route('/stats', methods=['GET'])
 def get_stats():
     """Get dashboard statistics"""
     try:
@@ -540,7 +546,7 @@ def get_stats():
         return jsonify({"error": str(e)}), 500
 
 
-@app.route('/leaderboard', methods=['GET'])
+@api_bp.route('/leaderboard', methods=['GET'])
 def get_leaderboard():
     """Get attendance leaderboard"""
     try:
@@ -584,7 +590,7 @@ def get_leaderboard():
         return jsonify({"error": str(e)}), 500
 
 
-@app.route('/ground-status', methods=['GET'])
+@api_bp.route('/ground-status', methods=['GET'])
 def ground_status():
     """Get ground status and readiness"""
     try:
@@ -619,7 +625,7 @@ def ground_status():
         return jsonify({"error": str(e)}), 500
 
 
-@app.route('/player/<player_id>', methods=['GET'])
+@api_bp.route('/player/<player_id>', methods=['GET'])
 def get_player_details(player_id):
     """Get detailed information about a specific player"""
     try:
@@ -655,7 +661,7 @@ def get_player_details(player_id):
         return jsonify({"error": str(e)}), 500
 
 
-@app.route('/reset', methods=['POST'])
+@api_bp.route('/reset', methods=['POST'])
 def reset_database():
     """Reset all data (for testing/demo purposes)"""
     global players_db, attendance_stats
@@ -664,7 +670,7 @@ def reset_database():
     return jsonify({"success": True, "message": "Database reset"}), 200
 
 
-@app.route('/update-ground-location', methods=['POST'])
+@api_bp.route('/update-ground-location', methods=['POST'])
 def update_ground_location():
     """
     Update ground location dynamically (runtime only, resets on restart)
@@ -698,7 +704,7 @@ def update_ground_location():
         return jsonify({"error": str(e)}), 500
 
 
-@app.route('/save-ground-location', methods=['POST'])
+@api_bp.route('/save-ground-location', methods=['POST'])
 def save_ground_location():
     """
     Permanently save ground location to config.py on disk
@@ -755,7 +761,7 @@ def save_ground_location():
         return jsonify({"error": str(e)}), 500
 
 
-@app.route('/upload-profile-picture', methods=['POST'])
+@api_bp.route('/upload-profile-picture', methods=['POST'])
 def upload_profile_picture():
     """
     Upload profile picture for a player
@@ -809,7 +815,7 @@ def upload_profile_picture():
         return jsonify({"error": str(e)}), 500
 
 
-@app.route('/player/<player_id>/picture', methods=['GET'])
+@api_bp.route('/player/<player_id>/picture', methods=['GET'])
 def get_player_picture(player_id):
     """Get profile picture for a player"""
     try:
@@ -832,7 +838,7 @@ def get_player_picture(player_id):
         return jsonify({"error": str(e)}), 500
 
 
-@app.route('/player/<player_id>/current-location', methods=['GET'])
+@api_bp.route('/player/<player_id>/current-location', methods=['GET'])
 def get_player_current_location(player_id):
     """Get current location of a player"""
     try:
@@ -863,7 +869,7 @@ PLAYER_IMG_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '
 ALLOWED_IMAGE_EXT = {'.jpg', '.jpeg', '.png', '.webp', '.gif'}
 
 
-@app.route('/images/list', methods=['GET'])
+@api_bp.route('/images/list', methods=['GET'])
 def list_moment_images():
     """List all images in the project ./images folder."""
     try:
@@ -883,7 +889,7 @@ def list_moment_images():
         return jsonify({"error": str(e)}), 500
 
 
-@app.route('/images/<path:filename>', methods=['GET'])
+@api_bp.route('/images/<path:filename>', methods=['GET'])
 def serve_moment_image(filename):
     """Serve a single image from ./images."""
     try:
@@ -902,7 +908,7 @@ def serve_moment_image(filename):
 def home():
     return "Volley Backend Running"
 
-@app.route('/player_img/<path:filename>', methods=['GET'])
+@api_bp.route('/player_img/<path:filename>', methods=['GET'])
 def serve_player_image(filename):
     """Serve a player profile photo from ./player_img."""
     try:
@@ -928,6 +934,10 @@ def not_found(error):
 @app.errorhandler(500)
 def internal_error(error):
     return jsonify({"error": "Internal server error"}), 500
+
+
+# ==================== REGISTER BLUEPRINT ====================
+app.register_blueprint(api_bp)
 
 
 if __name__ == '__main__':

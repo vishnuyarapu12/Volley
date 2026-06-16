@@ -6,16 +6,8 @@ export default defineConfig({
   server: {
     port: 3000,
     proxy: {
+      // All API calls (including /api/images and /api/player_img) proxied here
       '/api': {
-        target: 'http://localhost:5000',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, '')
-      },
-      '/images': {
-        target: 'http://localhost:5000',
-        changeOrigin: true,
-      },
-      '/player_img': {
         target: 'http://localhost:5000',
         changeOrigin: true,
       },

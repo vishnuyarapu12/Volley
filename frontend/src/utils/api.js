@@ -1,12 +1,13 @@
 import axios from 'axios';
 
-// In dev, use Vite proxy (/api → backend). In production, set VITE_API_URL or default to :5000.
-const API_BASE_URL =
-  import.meta.env.VITE_API_URL ||
-  (import.meta.env.DEV ? '/api' : 'http://localhost:5000');
+// VITE_API_URL must be set in .env (e.g. https://your-backend.com)
+// In dev with no env var, falls back to Vite proxy (/api → localhost:5000)
+const API_BASE_URL = import.meta.env.VITE_API_URL
+  ? `${import.meta.env.VITE_API_URL.replace(/\/$/, '')}`
+  : (import.meta.env.DEV ? '' : 'http://localhost:5000');
 
 const api = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: API_BASE_URL ? `${API_BASE_URL}/api` : '/api',
   headers: {
     'Content-Type': 'application/json',
   }
@@ -245,9 +246,8 @@ export const storage = {
 /** URL for an image served from backend ./images */
 export const getMomentImageUrl = (filename) => {
   const path = `/images/${encodeURIComponent(filename)}`;
-  if (import.meta.env.DEV) return path;
-  const base = API_BASE_URL.replace(/\/$/, '');
-  return `${base}${path}`;
+  if (!API_BASE_URL) return path;          // dev proxy handles it
+  return `${API_BASE_URL}${path}`;
 };
 
 export default api;
