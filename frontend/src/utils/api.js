@@ -178,6 +178,15 @@ export const playerAPI = {
     }
   },
 
+  // Mark player as offline (browser close / tab close)
+  goOffline: async (playerId) => {
+    try {
+      await api.post('/go-offline', { player_id: playerId });
+    } catch (error) {
+      // Silently fail — this is best-effort on browser close
+    }
+  },
+
   // Upload profile picture with optional display name for showcase
   uploadProfilePicture: async (playerId, file, pictureName = '') => {
     try {

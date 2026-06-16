@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
-import { storage } from './utils/api';
+import { storage, playerAPI } from './utils/api';
 import JoinPage from './pages/JoinPage';
 import DashboardPage from './pages/DashboardPage';
 import MomentsPage from './pages/MomentsPage';
@@ -15,6 +15,28 @@ function AppContent() {
   const [darkMode, setDarkMode] = useState(true);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const playerIdRef = useRef(null);
+
+  // ── Mark player offline when browser/tab closes ──
+  useEffect(() => {
+    function handleBeforeUnload() {
+      const id = playerIdRef.current || storage.getPlayerId();
+      if (!id) return;
+
+      // Use sendBeacon for reliability during page unload
+      const apiBase = import.meta.env.VITE_API_URL
+        ? `${import.meta.env.VITE_API_URL.replace(/\/$/, '')}/api`
+        : '/api';
+      const blob = new Blob(
+        [JSON.stringify({ player_id: id })],
+        { type: 'application/json' }
+      );
+      navigator.sendBeacon(`${apiBase}/go-offline`, blob);
+    }
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, []);
 
   useEffect(() => {
     // Load player ID from localStorage
@@ -37,12 +59,19 @@ function AppContent() {
 
   const handleJoinTeam = (newPlayerId) => {
     storage.setPlayerId(newPlayerId);
+    playerIdRef.current = newPlayerId;
     setPlayerId(newPlayerId);
     // Explicitly navigate to home so the user always lands on the right page
     navigate('/', { replace: true });
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    // Explicitly mark offline on the server before clearing local state
+    const id = playerIdRef.current || storage.getPlayerId();
+    if (id) {
+      try { await playerAPI.goOffline(id); } catch (_) { /* best-effort */ }
+    }
+    playerIdRef.current = null;
     setPlayerId(null);
     storage.clearPlayerId();
     storage.clearPlayerInfo();

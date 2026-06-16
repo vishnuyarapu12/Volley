@@ -31,6 +31,7 @@ api_bp = Blueprint('api', __name__, url_prefix='/api')
 # In-memory storage
 players_db = {}  # {player_id: {name, team, jersey, lat, lon, timestamp, stats}}
 attendance_stats = {}  # {player_id: {visits, last_visit, arrival_times}}
+_last_reset_date = datetime.now().strftime('%Y-%m-%d')  # tracks daily reset
 
 LOCATION_VOTE_OPTIONS = (
     "At Ground",
@@ -41,6 +42,24 @@ LOCATION_VOTE_OPTIONS = (
 )
 
 # ==================== UTILITY FUNCTIONS ====================
+
+def check_daily_reset():
+    """Reset all player statuses once per new calendar day.
+    Clears location votes, sets everyone offline, so each day starts fresh.
+    """
+    global _last_reset_date
+    today = datetime.now().strftime('%Y-%m-%d')
+    if today == _last_reset_date:
+        return
+    # New day detected — reset every player's daily state
+    _last_reset_date = today
+    for player in players_db.values():
+        player['location_vote'] = None
+        player['location_vote_at'] = None
+        player['is_online'] = False
+        player['status'] = 'Offline'
+    print(f"[Daily Reset] All player statuses reset for {today}")
+
 
 def generate_player_id():
     """Generate unique player ID"""
@@ -163,6 +182,7 @@ def get_stats_for_player(player_id):
 @api_bp.route('/health', methods=['GET'])
 def health_check():
     """Health check endpoint"""
+    check_daily_reset()
     return jsonify({"status": "ok", "message": "VolleyTrack Backend Running"})
 
 
@@ -376,11 +396,15 @@ def cast_location_vote():
 
 @api_bp.route('/location-votes', methods=['GET'])
 def get_location_votes():
-    """All players with their location votes and counts per option."""
+    """All ONLINE players with their location votes and counts per option.
+    Offline / not-logged-in players are excluded from the dashboard."""
     try:
+        check_daily_reset()
+
         players_list = [
             build_vote_player_payload(player)
             for player in players_db.values()
+            if player.get('is_online') or player.get('location_vote')
         ]
         players_list.sort(
             key=lambda p: (
@@ -476,9 +500,11 @@ def get_map_data():
 
 @api_bp.route('/stats', methods=['GET'])
 def get_stats():
-    """Get dashboard statistics"""
+    """Get dashboard statistics — only counts ONLINE players."""
     try:
-        # Count players by self-reported location vote
+        check_daily_reset()
+
+        # Count players by self-reported location vote (online only)
         at_ground = 0
         nearby = 0
         on_the_way = 0
@@ -486,7 +512,8 @@ def get_stats():
         not_coming = 0
         no_vote = 0
 
-        for player in players_db.values():
+        online_players = [p for p in players_db.values() if p.get('is_online') or p.get('location_vote')]
+        for player in online_players:
             vote = player.get('location_vote')
             if vote == 'At Ground':
                 at_ground += 1
@@ -501,7 +528,7 @@ def get_stats():
             else:
                 no_vote += 1
 
-        total_players = len(players_db)
+        total_players = len(online_players)
         present_players = at_ground
         
         # Match readiness — full match only (12 players)
@@ -657,6 +684,28 @@ def get_player_details(player_id):
             }
         }), 200
     
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@api_bp.route('/go-offline', methods=['POST'])
+def go_offline():
+    """Mark a player as offline (called when browser/tab is closed)."""
+    try:
+        data = request.get_json(silent=True) or {}
+        player_id = data.get('player_id')
+
+        if not player_id or player_id not in players_db:
+            return jsonify({"success": True}), 200  # silently succeed
+
+        player = players_db[player_id]
+        player['is_online'] = False
+        player['status'] = 'Offline'
+        player['location_vote'] = None
+        player['location_vote_at'] = None
+
+        return jsonify({"success": True, "player_id": player_id}), 200
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
