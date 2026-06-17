@@ -393,12 +393,91 @@ function StatPill({ label, value, accent }) {
   );
 }
 
+// ─── Full image modal ────────────────────────────────────────────────────────
+function FullImageModal({ player, onClose }) {
+  const rm = roleMeta(player.role);
+  // Close on Escape key
+  useEffect(() => {
+    function onKey(e) { if (e.key === 'Escape') onClose(); }
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
+  return (
+    <div
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+      style={{ background: 'rgba(0,0,0,0.92)', backdropFilter: 'blur(20px)' }}
+      onClick={onClose}
+    >
+      <div
+        className="relative flex flex-col items-center gap-4"
+        style={{ animation: 'tpPopIn 0.35s cubic-bezier(0.34,1.56,0.64,1) both' }}
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Close button */}
+        <button
+          onClick={onClose}
+          className="absolute -top-3 -right-3 z-10 w-9 h-9 flex items-center justify-center rounded-full bg-white/15 hover:bg-white/30 text-white text-base font-bold transition-colors shadow-lg"
+        >
+          ✕
+        </button>
+
+        {/* Image */}
+        <div
+          className="rounded-3xl overflow-hidden border-2 shadow-2xl"
+          style={{
+            borderColor: rm.accent + '88',
+            boxShadow: `0 0 60px ${rm.accent}44, 0 0 120px ${rm.accent}22`,
+            maxWidth: 'min(88vw, 420px)',
+            maxHeight: 'min(80vh, 520px)',
+          }}
+        >
+          <img
+            src={getPlayerImage(player.img) || `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 400 400'%3E%3Crect width='400' height='400' fill='%23334155'/%3E%3Ctext x='200' y='220' font-size='120' text-anchor='middle' fill='%23fbbf24' font-family='sans-serif'%3E${encodeURIComponent(player.name[0])}%3C/text%3E%3C/svg%3E`}
+            alt={player.name}
+            className="block w-full h-full object-cover object-top"
+            style={{ maxWidth: 'min(88vw, 420px)', maxHeight: 'min(80vh, 520px)' }}
+          />
+        </div>
+
+        {/* Name + role */}
+        <div className="flex flex-col items-center gap-2">
+          <p className="text-2xl font-black text-white tracking-tight">{player.name}</p>
+          <span
+            className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full bg-gradient-to-r ${roleBg(player.role)} text-white uppercase tracking-wide shadow-lg`}
+          >
+            <span>{rm.icon}</span>
+            {player.role}
+          </span>
+          {player.tagline && (
+            <p className="text-sm text-gray-400 italic text-center max-w-xs">"{player.tagline}"</p>
+          )}
+        </div>
+
+        {/* Hint */}
+        <p className="text-[10px] text-gray-600 uppercase tracking-widest">Tap anywhere to close</p>
+      </div>
+    </div>
+  );
+}
+
 // ─── Single player card ───────────────────────────────────────────────────────
-function PlayerCard({ player, index, liveStatus, stats, editMode, onEdit }) {
+function PlayerCard({ player, index, liveStatus, stats, editMode, onEdit, onViewImage }) {
   const [hovered, setHovered] = useState(false);
   const sm = statusMeta(liveStatus || 'Offline');
   const rm = roleMeta(player.role);
   const isOnline = liveStatus && liveStatus !== 'Offline';
+
+  // Double-tap detection for mobile
+  const lastTapRef = useRef(0);
+  function handleTouchEnd(e) {
+    const now = Date.now();
+    if (now - lastTapRef.current < 300) {
+      e.preventDefault();
+      onViewImage(player);
+    }
+    lastTapRef.current = now;
+  }
 
   return (
     <div
@@ -406,7 +485,9 @@ function PlayerCard({ player, index, liveStatus, stats, editMode, onEdit }) {
       style={{ animationDelay: `${index * 60}ms` }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
+      onDoubleClick={() => onViewImage(player)}
       onTouchStart={() => setHovered(v => !v)}
+      onTouchEnd={handleTouchEnd}
     >
       {/* Glow border gradient */}
       <div className={`tp-card-glow absolute inset-0 rounded-[22px] pointer-events-none transition-opacity duration-500 ${hovered ? 'opacity-100' : 'opacity-0'}`}
@@ -620,6 +701,7 @@ export default function TeamPlayersShowcase() {
   const [liveData, setLiveData] = useState({});
   const [editMode, setEditMode] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
+  const [imagePlayer, setImagePlayer] = useState(null);
   const [visible, setVisible] = useState(false);
   const [roleFilter, setRoleFilter] = useState(null);
   const sectionRef = useRef(null);
@@ -735,6 +817,7 @@ export default function TeamPlayersShowcase() {
                 stats={getStats(player)}
                 editMode={editMode}
                 onEdit={setEditTarget}
+                onViewImage={setImagePlayer}
               />
             </div>
           ))}
@@ -763,6 +846,14 @@ export default function TeamPlayersShowcase() {
           player={editTarget}
           onSave={handleSave}
           onClose={() => setEditTarget(null)}
+        />
+      )}
+
+      {/* Full image modal */}
+      {imagePlayer && (
+        <FullImageModal
+          player={imagePlayer}
+          onClose={() => setImagePlayer(null)}
         />
       )}
     </section>
