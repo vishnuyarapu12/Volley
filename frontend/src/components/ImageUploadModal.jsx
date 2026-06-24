@@ -36,8 +36,8 @@ export default function ImageUploadModal({ isOpen, onClose, onUploadSuccess }) {
       setError('Please select a JPG, PNG, or WebP image');
       return;
     }
-    if (file.size > 5 * 1024 * 1024) {
-      setError('Image must be less than 5MB');
+    if (file.size >  10* 1024 * 1024) {
+      setError('Image must be less than 10MB');
       return;
     }
     setError('');

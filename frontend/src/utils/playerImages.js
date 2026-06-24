@@ -1,31 +1,22 @@
 /**
- * Player image mapping — imports all player photos from src/player_img
- * so they are bundled by Vite and served from the CDN in production.
+ * Player image mapping — auto-discovers all images in src/player_img
+ * using Vite's import.meta.glob so new images work immediately
+ * without any manual registration.
  *
- * Key: player name (must match the `name` field in the roster).
+ * Key: player name (stem of the filename, e.g. "Bharath").
  * Value: Vite-resolved image URL.
  */
-import Bharath from '../player_img/Bharath.jpeg';
-import Devaraj from '../player_img/Devaraj.jpeg';
-import Mahesh from '../player_img/Mahesh.jpeg';
-import Nawaz from '../player_img/Nawaz.jpeg';
-import Pinchu from '../player_img/Pinchu.jpeg';
-import Praveen from '../player_img/Praveen.jpeg';
-import Sai from '../player_img/Sai.jpeg';
-import Sandeep from '../player_img/Sandeep.jpeg';
-import Vishnu from '../player_img/Vishnu.jpeg';
 
-export const playerImages = {
-  Bharath,
-  Devaraj,
-  Mahesh,
-  Nawaz,
-  Pinchu,
-  Praveen,
-  Sai,
-  Sandeep,
-  Vishnu,
-};
+// Eagerly import every image in the folder — Vite resolves them at build time.
+const rawModules = import.meta.glob('../player_img/*.{jpeg,jpg,png,webp,avif,gif}', { eager: true });
+
+export const playerImages = {};
+
+for (const [path, mod] of Object.entries(rawModules)) {
+  // Extract the filename stem: "../player_img/Bharath.jpeg" → "Bharath"
+  const stem = path.split('/').pop().replace(/\.[^.]+$/, '');
+  playerImages[stem] = mod.default ?? mod;
+}
 
 /**
  * Look up a player image by name or filename.
