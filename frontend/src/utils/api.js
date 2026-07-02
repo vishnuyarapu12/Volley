@@ -157,6 +157,54 @@ export const playerAPI = {
       console.error('Error getting player picture:', error);
       throw error;
     }
+  },
+
+  // Admin Login
+  adminLogin: async (username, password) => {
+    try {
+      const response = await api.post('/admin-login', { username, password });
+      return response.data;
+    } catch (error) {
+      console.error('Error admin login:', error);
+      throw error;
+    }
+  },
+
+  // Update Admin Credentials
+  updateAdminCredentials: async (new_username, new_password) => {
+    try {
+      const response = await api.put('/admin/credentials', { new_username, new_password });
+      return response.data;
+    } catch (error) {
+      console.error('Error updating admin credentials:', error);
+      throw error;
+    }
+  },
+
+  // Get uploaded moments
+  getMoments: async () => {
+    try {
+      const response = await api.get('/moments');
+      return response.data;
+    } catch (error) {
+      console.error('Error getting moments:', error);
+      throw error;
+    }
+  },
+
+  // Upload a moment image
+  uploadMoment: async (file) => {
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+      const response = await api.post('/upload-moment', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error uploading moment:', error);
+      throw error;
+    }
   }
 };
 
@@ -177,7 +225,11 @@ export const storage = {
   isLocationTrackingEnabled: () => localStorage.getItem('volleytrack_tracking') === 'true',
 
   setDarkMode: (enabled) => localStorage.setItem('volleytrack_dark_mode', enabled),
-  isDarkModeEnabled: () => localStorage.getItem('volleytrack_dark_mode') !== 'false'
+  isDarkModeEnabled: () => localStorage.getItem('volleytrack_dark_mode') !== 'false',
+
+  setAdmin: (isAdmin) => localStorage.setItem('volleytrack_admin', isAdmin),
+  isAdmin: () => localStorage.getItem('volleytrack_admin') === 'true',
+  clearAdmin: () => localStorage.removeItem('volleytrack_admin')
 };
 
 export default api;

@@ -4,7 +4,7 @@ import ImageUploadModal from './ImageUploadModal';
 import { storage } from '../utils/api';
 import { Camera, Users } from 'lucide-react';
 
-export default function PlayerProfileGallery({ players, onUploadSuccess }) {
+export default function PlayerProfileGallery({ players, onUploadSuccess, isAdmin }) {
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(null); // null = closed
   const currentPlayerId = storage.getPlayerId();
@@ -32,21 +32,23 @@ export default function PlayerProfileGallery({ players, onUploadSuccess }) {
           <div className="flex items-center gap-3">
             <div className="w-1.5 h-6 bg-gradient-to-b from-yellow-400 to-yellow-600 rounded-full" />
             <h3 className="text-lg font-bold text-white">Your Profile</h3>
-            <button
-              id="upload-photo-btn"
-              onClick={() => setUploadModalOpen(true)}
-              className="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-yellow-400/10 border border-yellow-400/30 text-yellow-300 text-sm font-semibold hover:bg-yellow-400/20 transition-all"
-            >
-              <Camera size={14} />
-              {currentPlayer.profile_picture ? 'Change Photo' : 'Add Photo'}
-            </button>
+            {isAdmin && (
+              <button
+                id="upload-photo-btn"
+                onClick={() => setUploadModalOpen(true)}
+                className="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-yellow-400/10 border border-yellow-400/30 text-yellow-300 text-sm font-semibold hover:bg-yellow-400/20 transition-all"
+              >
+                <Camera size={14} />
+                {currentPlayer.profile_picture ? 'Change Photo' : 'Add Photo'}
+              </button>
+            )}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <PlayerProfileCard
               player={currentPlayer}
               isCurrentUser={true}
-              onEditClick={() => setUploadModalOpen(true)}
+              onEditClick={isAdmin ? () => setUploadModalOpen(true) : undefined}
               onClick={() => openLightbox(currentPlayer)}
             />
           </div>

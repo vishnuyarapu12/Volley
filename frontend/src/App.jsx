@@ -12,6 +12,7 @@ import Navigation from './components/Navigation';
 // Inner component that has access to Router context (needed for useNavigate)
 function AppContent() {
   const [playerId, setPlayerId] = useState(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [darkMode, setDarkMode] = useState(true);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
@@ -42,6 +43,10 @@ function AppContent() {
     // Load player ID from localStorage
     const savedPlayerId = storage.getPlayerId();
     setPlayerId(savedPlayerId);
+    
+    // Load admin state
+    const savedIsAdmin = storage.isAdmin();
+    setIsAdmin(savedIsAdmin);
 
     // Load dark mode preference
     const isDarkMode = storage.isDarkModeEnabled();
@@ -65,6 +70,12 @@ function AppContent() {
     navigate('/', { replace: true });
   };
 
+  const handleAdminLogin = () => {
+    storage.setAdmin(true);
+    setIsAdmin(true);
+    navigate('/', { replace: true });
+  };
+
   const handleLogout = async () => {
     // Explicitly mark offline on the server before clearing local state
     const id = playerIdRef.current || storage.getPlayerId();
@@ -73,8 +84,10 @@ function AppContent() {
     }
     playerIdRef.current = null;
     setPlayerId(null);
+    setIsAdmin(false);
     storage.clearPlayerId();
     storage.clearPlayerInfo();
+    storage.clearAdmin();
     // Navigate back to join page on logout
     navigate('/', { replace: true });
   };
@@ -101,27 +114,29 @@ function AppContent() {
 
   return (
     <div className="min-h-screen bg-volleyball-darker text-gray-100">
-      {playerId ? (
+      {playerId || isAdmin ? (
         <>
           <Routes>
-            <Route path="/" element={<MomentsPage />} />
-            <Route path="/dashboard" element={<DashboardPage />} />
-            <Route path="/players" element={<PlayersPage />} />
-            <Route path="/team" element={<TeamPage />} />
+            <Route path="/" element={<MomentsPage isAdmin={isAdmin} />} />
+            <Route path="/dashboard" element={<DashboardPage isAdmin={isAdmin} />} />
+            <Route path="/players" element={<PlayersPage isAdmin={isAdmin} />} />
+            <Route path="/team" element={<TeamPage isAdmin={isAdmin} />} />
             <Route path="/map" element={<Navigate to="/" replace />} />
             <Route path="/moments" element={<Navigate to="/" replace />} />
-            <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/profile" element={playerId ? <ProfilePage /> : <Navigate to="/" replace />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
           <Navigation
             darkMode={darkMode}
             onToggleDarkMode={toggleDarkMode}
             onLogout={handleLogout}
+            isAdmin={isAdmin}
+            hasPlayerId={!!playerId}
           />
         </>
       ) : (
         <Routes>
-          <Route path="/*" element={<JoinPage onJoinTeam={handleJoinTeam} />} />
+          <Route path="/*" element={<JoinPage onJoinTeam={handleJoinTeam} onAdminLogin={handleAdminLogin} />} />
         </Routes>
       )}
     </div>

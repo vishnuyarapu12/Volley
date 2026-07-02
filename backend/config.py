@@ -25,3 +25,12 @@ PORT = 5000
 
 # CORS configuration
 CORS_ORIGINS = ["*"]  # In production, specify exact origins
+
+# Admin Configuration
+ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME", "admin")
+ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "volleyadmin")
+
+# Upload Configuration
+UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads')
+MOMENTS_UPLOAD_FOLDER = os.path.join(UPLOAD_FOLDER, 'moments')
+PROFILES_UPLOAD_FOLDER = os.path.join(UPLOAD_FOLDER, 'profiles')

@@ -3,7 +3,8 @@ VolleyTrack - Smart Volleyball Presence Network
 Backend API Server (Flask)
 """
 
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
+from werkzeug.utils import secure_filename
 from flask_cors import CORS
 from datetime import datetime
 import math
@@ -21,6 +22,10 @@ from utils import (
 # Initialize Flask app
 app = Flask(__name__)
 CORS(app, origins=config.CORS_ORIGINS)
+
+# Ensure upload directories exist
+os.makedirs(config.MOMENTS_UPLOAD_FOLDER, exist_ok=True)
+os.makedirs(config.PROFILES_UPLOAD_FOLDER, exist_ok=True)
 
 # All routes are registered under /api so the frontend can call
 # fetch(`${VITE_API_URL}/api/...`) in production and the Vite
@@ -184,6 +189,159 @@ def health_check():
     """Health check endpoint"""
     check_daily_reset()
     return jsonify({"status": "ok", "message": "VolleyTrack Backend Running"})
+
+@api_bp.route('/uploads/<folder>/<filename>', methods=['GET'])
+def serve_upload(folder, filename):
+    """Serve uploaded static files"""
+    if folder == 'moments':
+        return send_from_directory(config.MOMENTS_UPLOAD_FOLDER, filename)
+    elif folder == 'profiles':
+        return send_from_directory(config.PROFILES_UPLOAD_FOLDER, filename)
+    return jsonify({"error": "Invalid folder"}), 404
+
+@api_bp.route('/admin-login', methods=['POST'])
+def admin_login():
+    """Authenticate Admin"""
+    data = request.get_json(silent=True) or {}
+    username = data.get('username')
+    password = data.get('password')
+    
+    if username == config.ADMIN_USERNAME and password == config.ADMIN_PASSWORD:
+        return jsonify({"success": True, "token": "admin-token-xyz"}) # Simple fixed token for now
+    return jsonify({"error": "Invalid credentials"}), 401
+
+@api_bp.route('/admin/credentials', methods=['PUT'])
+def update_admin_credentials():
+    """Update Admin Credentials"""
+    data = request.get_json(silent=True) or {}
+    new_username = data.get('new_username')
+    new_password = data.get('new_password')
+    
+    if not new_username or not new_password:
+        return jsonify({"error": "Username and password are required"}), 400
+        
+    try:
+        import os
+        import re
+        config_path = os.path.join(os.path.dirname(__file__), 'config.py')
+        with open(config_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+
+        # Replace ADMIN_USERNAME
+        content = re.sub(
+            r'ADMIN_USERNAME\s*=\s*os\.environ\.get\([^,]+,\s*"[^"]+"\)',
+            f'ADMIN_USERNAME = "{new_username}"',
+            content
+        )
+        content = re.sub(
+            r'ADMIN_USERNAME\s*=\s*"[^"]+"',
+            f'ADMIN_USERNAME = "{new_username}"',
+            content
+        )
+        
+        # Replace ADMIN_PASSWORD
+        content = re.sub(
+            r'ADMIN_PASSWORD\s*=\s*os\.environ\.get\([^,]+,\s*"[^"]+"\)',
+            f'ADMIN_PASSWORD = "{new_password}"',
+            content
+        )
+        content = re.sub(
+            r'ADMIN_PASSWORD\s*=\s*"[^"]+"',
+            f'ADMIN_PASSWORD = "{new_password}"',
+            content
+        )
+
+        with open(config_path, 'w', encoding='utf-8') as f:
+            f.write(content)
+            
+        # Update in memory
+        config.ADMIN_USERNAME = new_username
+        config.ADMIN_PASSWORD = new_password
+
+        return jsonify({"success": True, "message": "Credentials updated successfully"})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@api_bp.route('/moments', methods=['GET'])
+def get_moments():
+    """Get list of uploaded moment images"""
+    try:
+        files = os.listdir(config.MOMENTS_UPLOAD_FOLDER)
+        # Filter only image files
+        images = [f for f in files if f.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.webp', '.avif'))]
+        images.sort() # Sort alphabetically or by creation time
+        
+        # Build URLs
+        moments = []
+        for img in images:
+            # Assuming frontend proxies /api to backend
+            moments.append({
+                "filename": img,
+                "src": f"/api/uploads/moments/{img}",
+                "label": img.split('.')[0] # Basic label, can be improved
+            })
+            
+        return jsonify({"success": True, "moments": moments})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@api_bp.route('/upload-moment', methods=['POST'])
+def upload_moment():
+    """Admin upload a new moment image"""
+    try:
+        if 'image' not in request.files:
+            return jsonify({"error": "No image provided"}), 400
+            
+        file = request.files['image']
+        if file.filename == '':
+            return jsonify({"error": "Empty filename"}), 400
+            
+        filename = secure_filename(file.filename)
+        # Append timestamp to avoid collisions
+        name, ext = os.path.splitext(filename)
+        filename = f"{name}_{int(datetime.now().timestamp())}{ext}"
+        
+        file.save(os.path.join(config.MOMENTS_UPLOAD_FOLDER, filename))
+        
+        return jsonify({"success": True, "message": "Moment uploaded successfully"})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@api_bp.route('/upload-profile-picture', methods=['POST'])
+def upload_profile_picture():
+    """Upload player profile picture"""
+    try:
+        player_id = request.form.get('player_id')
+        picture_name = request.form.get('picture_name', '').strip()
+        
+        if not player_id:
+            return jsonify({"error": "Player ID required"}), 400
+            
+        if 'image' not in request.files:
+            return jsonify({"error": "No image provided"}), 400
+            
+        file = request.files['image']
+        if file.filename == '':
+            return jsonify({"error": "Empty filename"}), 400
+            
+        filename = secure_filename(file.filename)
+        name, ext = os.path.splitext(filename)
+        # Use player_id as filename for easy overwrite
+        filename = f"profile_{player_id}{ext}"
+        
+        file.save(os.path.join(config.PROFILES_UPLOAD_FOLDER, filename))
+        
+        # Update player record
+        player = ensure_player_record(player_id)
+        player['profile_picture'] = f"/api/uploads/profiles/{filename}"
+        if picture_name:
+            player['picture_label'] = picture_name
+            # If name is changed here, update it too
+            player['name'] = picture_name
+            
+        return jsonify({"success": True, "message": "Profile picture updated"})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 @api_bp.route('/join', methods=['POST'])
@@ -810,58 +968,7 @@ def save_ground_location():
         return jsonify({"error": str(e)}), 500
 
 
-@api_bp.route('/upload-profile-picture', methods=['POST'])
-def upload_profile_picture():
-    """
-    Upload profile picture for a player
-    
-    Expected: FormData with 'player_id' and 'image' file
-    """
-    try:
-        from werkzeug.utils import secure_filename
-        import base64
-        import os
-        
-        player_id = request.form.get('player_id')
-        picture_name = (request.form.get('picture_name') or '').strip()
-        
-        if not player_id or player_id not in players_db:
-            return jsonify({"error": "Invalid player ID"}), 400
-        
-        if 'image' not in request.files:
-            return jsonify({"error": "No image file provided"}), 400
-        
-        file = request.files['image']
-        
-        if file.filename == '':
-            return jsonify({"error": "No file selected"}), 400
-        
-        # Read file and encode to base64
-        file_data = file.read()
-        base64_image = base64.b64encode(file_data).decode('utf-8')
-        
-        # Get file extension
-        file_ext = os.path.splitext(secure_filename(file.filename))[1]
-        mime_type = 'image/jpeg' if file_ext.lower() in ['.jpg', '.jpeg'] else 'image/png' if file_ext.lower() == '.png' else 'image/webp'
-        
-        # Store as data URL
-        data_url = f"data:{mime_type};base64,{base64_image}"
-        
-        # Update player record
-        players_db[player_id]['profile_picture'] = data_url
-        players_db[player_id]['picture_updated_at'] = datetime.now().isoformat()
-        if picture_name:
-            players_db[player_id]['picture_label'] = picture_name
-        
-        return jsonify({
-            "success": True,
-            "message": "Profile picture uploaded successfully",
-            "player_id": player_id,
-            "picture_label": players_db[player_id].get('picture_label')
-        }), 200
-    
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+
 
 
 @api_bp.route('/player/<player_id>/picture', methods=['GET'])

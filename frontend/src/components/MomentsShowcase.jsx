@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { ChevronLeft, ChevronRight, Sparkles, RefreshCw } from 'lucide-react';
-import { momentImages } from '../utils/momentImages';
+import { ChevronLeft, ChevronRight, Sparkles, RefreshCw, Upload } from 'lucide-react';
+import { playerAPI } from '../utils/api';
 import { pickRandomTitle, formatMomentLabel } from '../utils/momentsTitles';
 
 const DISPLAY_MS = 1700;
@@ -20,7 +20,7 @@ const SlideLayer = React.memo(function SlideLayer({ slide, animClass, zIndex }) 
   );
 });
 
-export default function MomentsShowcase({ hero = false }) {
+export default function MomentsShowcase({ hero = false, isAdmin = false }) {
   const [images, setImages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -30,9 +30,11 @@ export default function MomentsShowcase({ hero = false }) {
   const [paused, setPaused] = useState(false);
   const [clickTitle, setClickTitle] = useState('');
   const [titleKey, setTitleKey] = useState(0);
+  const [isUploading, setIsUploading] = useState(false);
   const lastTitleRef = useRef('');
   const transitioningRef = useRef(false);
   const activeIndexRef = useRef(0);
+  const fileInputRef = useRef(null);
 
   const slides = images;
   const active = slides[activeIndex];
@@ -88,16 +90,47 @@ export default function MomentsShowcase({ hero = false }) {
     [transitionTo]
   );
 
+  const fetchMoments = useCallback(async (switchToLast = false) => {
+    try {
+      const data = await playerAPI.getMoments();
+      if (data?.moments) {
+        const list = data.moments.map((img, i) => ({
+          ...img,
+          label: formatMomentLabel(img.filename, i),
+        }));
+        setImages(list);
+        if (list.length > 0 && switchToLast) {
+          transitionTo(list.length - 1);
+        } else if (list.length > 0 && images.length === 0) {
+          bumpRandomTitle();
+        }
+      }
+    } catch (err) {
+      console.error('Failed to load moments', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [bumpRandomTitle, images.length, transitionTo]);
+
   useEffect(() => {
-    // Build slides from locally imported moment images (no backend call)
-    const list = momentImages.map((img, i) => ({
-      ...img,
-      label: formatMomentLabel(img.filename, i),
-    }));
-    setImages(list);
-    if (list.length > 0) bumpRandomTitle();
-    setLoading(false);
-  }, [bumpRandomTitle]);
+    fetchMoments();
+  }, [fetchMoments]);
+
+  const handleUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      setIsUploading(true);
+      await playerAPI.uploadMoment(file);
+      await fetchMoments(true);
+    } catch (err) {
+      console.error("Upload failed", err);
+      alert("Failed to upload moment");
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
 
   useEffect(() => {
     if (paused || slides.length <= 1) return;
@@ -140,8 +173,7 @@ export default function MomentsShowcase({ hero = false }) {
         <Sparkles className="mx-auto text-gray-500 mb-4" size={40} />
         <p className="text-lg font-semibold text-gray-300">No moments yet</p>
         <p className="text-sm text-gray-500 mt-2">
-          Add photos to the <code className="text-yellow-400/80">src/moments_img</code> folder
-          and register them in <code className="text-yellow-400/80">src/utils/momentImages.js</code>
+          Admins can upload photos to populate the showcase.
         </p>
       </div>
     );
@@ -157,6 +189,25 @@ export default function MomentsShowcase({ hero = false }) {
 
   return (
     <div className={hero ? 'moments-hero-wrap' : 'space-y-6'}>
+      {isAdmin && !hero && (
+        <div className="flex justify-end mb-4">
+          <input 
+            type="file" 
+            ref={fileInputRef} 
+            onChange={handleUpload} 
+            accept="image/*" 
+            className="hidden" 
+          />
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isUploading}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-yellow-400/10 border border-yellow-400/30 text-yellow-300 text-sm font-semibold hover:bg-yellow-400/20 transition-all disabled:opacity-50"
+          >
+            {isUploading ? <RefreshCw className="animate-spin" size={16} /> : <Upload size={16} />}
+            {isUploading ? 'Uploading...' : 'Upload New Moment'}
+          </button>
+        </div>
+      )}
       <div
         className={viewerClass}
         onMouseEnter={() => setPaused(true)}

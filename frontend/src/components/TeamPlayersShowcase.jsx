@@ -696,7 +696,7 @@ function TeamStatsSummary({ roster, liveData }) {
 }
 
 // ─── Main showcase ────────────────────────────────────────────────────────────
-export default function TeamPlayersShowcase() {
+export default function TeamPlayersShowcase({ isAdmin }) {
   const [roster, setRoster] = useState(loadRoster);
   const [liveData, setLiveData] = useState({});
   const [editMode, setEditMode] = useState(false);
@@ -786,12 +786,14 @@ export default function TeamPlayersShowcase() {
           </div>
 
           {/* Edit toggle */}
-          <button
-            onClick={() => setEditMode(m => !m)}
-            className={`shrink-0 flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold border transition-all duration-300 ${editMode ? 'bg-yellow-400 text-yellow-900 border-yellow-400 shadow-lg shadow-yellow-400/30' : 'bg-white/5 text-gray-400 border-white/10 hover:border-yellow-400/30 hover:text-yellow-400'}`}
-          >
-            {editMode ? '✓ Done' : '✎ Edit Roster'}
-          </button>
+          {isAdmin && (
+            <button
+              onClick={() => setEditMode(m => !m)}
+              className={`shrink-0 flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold border transition-all duration-300 ${editMode ? 'bg-yellow-400 text-yellow-900 border-yellow-400 shadow-lg shadow-yellow-400/30' : 'bg-white/5 text-gray-400 border-white/10 hover:border-yellow-400/30 hover:text-yellow-400'}`}
+            >
+              {editMode ? '✓ Done' : '✎ Edit Roster'}
+            </button>
+          )}
         </div>
 
         {/* ── Team stats ── */}
