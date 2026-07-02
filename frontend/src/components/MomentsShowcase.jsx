@@ -3,8 +3,8 @@ import { ChevronLeft, ChevronRight, Sparkles, RefreshCw } from 'lucide-react';
 import { momentImages } from '../utils/momentImages';
 import { pickRandomTitle, formatMomentLabel } from '../utils/momentsTitles';
 
-const DISPLAY_MS = 4000;
-const TRANSITION_MS = 600;
+const DISPLAY_MS = 2000;
+const TRANSITION_MS = 1000;
 
 const SlideLayer = React.memo(function SlideLayer({ slide, animClass, zIndex }) {
   return (
