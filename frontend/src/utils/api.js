@@ -31,39 +31,6 @@ export const playerAPI = {
     }
   },
 
-  // Send location update (includes name/team for auto-registration after server restart)
-  updateLocation: async (playerId, latitude, longitude) => {
-    try {
-      // Pull player info from localStorage for auto-registration fallback
-      const info = localStorage.getItem('volleytrack_player_info');
-      const playerInfo = info ? JSON.parse(info) : {};
-
-      const response = await api.post('/location-update', {
-        player_id: playerId,
-        latitude,
-        longitude,
-        name: playerInfo.name || 'Unknown Player',
-        team: playerInfo.team || '',
-        jersey: playerInfo.jersey || 0,
-      });
-      return response.data;
-    } catch (error) {
-      console.error('Error updating location:', error);
-      throw error;
-    }
-  },
-
-  // Live map: ground + online players with GPS
-  getMapData: async () => {
-    try {
-      const response = await api.get('/map/data');
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching map data:', error);
-      throw error;
-    }
-  },
-
   // Get all players
   getPlayers: async () => {
     try {
@@ -146,34 +113,6 @@ export const playerAPI = {
       return response.data;
     } catch (error) {
       console.error('Error in health check:', error);
-      throw error;
-    }
-  },
-
-  // Update ground location (runtime only, resets on server restart)
-  updateGroundLocation: async (latitude, longitude) => {
-    try {
-      const response = await api.post('/update-ground-location', {
-        latitude,
-        longitude
-      });
-      return response.data;
-    } catch (error) {
-      console.error('Error updating ground location:', error);
-      throw error;
-    }
-  },
-
-  // Permanently save ground location to config.py on disk
-  saveGroundLocation: async (latitude, longitude) => {
-    try {
-      const response = await api.post('/save-ground-location', {
-        latitude,
-        longitude
-      });
-      return response.data;
-    } catch (error) {
-      console.error('Error saving ground location:', error);
       throw error;
     }
   },
