@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { ChevronLeft, ChevronRight, Sparkles, RefreshCw, Upload } from 'lucide-react';
 import { playerAPI } from '../utils/api';
 import { pickRandomTitle, formatMomentLabel } from '../utils/momentsTitles';
+import { defaultMoments } from '../utils/defaultMoments';
 
 const DISPLAY_MS = 1700;
 const TRANSITION_MS = 1000;
@@ -93,20 +94,31 @@ export default function MomentsShowcase({ hero = false, isAdmin = false }) {
   const fetchMoments = useCallback(async (switchToLast = false) => {
     try {
       const data = await playerAPI.getMoments();
+      let combined = [...defaultMoments];
       if (data?.moments) {
-        const list = data.moments.map((img, i) => ({
+        combined = [...combined, ...data.moments];
+      }
+      
+      if (combined.length > 0) {
+        const list = combined.map((img, i) => ({
           ...img,
           label: formatMomentLabel(img.filename, i),
         }));
         setImages(list);
-        if (list.length > 0 && switchToLast) {
+        if (switchToLast) {
           transitionTo(list.length - 1);
-        } else if (list.length > 0 && images.length === 0) {
+        } else if (images.length === 0) {
           bumpRandomTitle();
         }
       }
     } catch (err) {
       console.error('Failed to load moments', err);
+      // Fallback to default moments if backend fails
+      const list = defaultMoments.map((img, i) => ({
+        ...img,
+        label: formatMomentLabel(img.filename, i),
+      }));
+      setImages(list);
     } finally {
       setLoading(false);
     }
@@ -189,25 +201,7 @@ export default function MomentsShowcase({ hero = false, isAdmin = false }) {
 
   return (
     <div className={hero ? 'moments-hero-wrap' : 'space-y-6'}>
-      {isAdmin && !hero && (
-        <div className="flex justify-end mb-4">
-          <input 
-            type="file" 
-            ref={fileInputRef} 
-            onChange={handleUpload} 
-            accept="image/*" 
-            className="hidden" 
-          />
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            disabled={isUploading}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-yellow-400/10 border border-yellow-400/30 text-yellow-300 text-sm font-semibold hover:bg-yellow-400/20 transition-all disabled:opacity-50"
-          >
-            {isUploading ? <RefreshCw className="animate-spin" size={16} /> : <Upload size={16} />}
-            {isUploading ? 'Uploading...' : 'Upload New Moment'}
-          </button>
-        </div>
-      )}
+
       <div
         className={viewerClass}
         onMouseEnter={() => setPaused(true)}
@@ -352,6 +346,26 @@ export default function MomentsShowcase({ hero = false, isAdmin = false }) {
           </button>
         ))}
       </div>
+
+      {isAdmin && (
+        <div className="flex justify-center mt-6 mb-8">
+          <input 
+            type="file" 
+            ref={fileInputRef} 
+            onChange={handleUpload} 
+            accept="image/*" 
+            className="hidden" 
+          />
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isUploading}
+            className="flex items-center gap-2 px-6 py-3 rounded-xl bg-yellow-400 text-yellow-900 font-bold hover:bg-yellow-300 transition-all shadow-lg shadow-yellow-400/20 disabled:opacity-50"
+          >
+            {isUploading ? <RefreshCw className="animate-spin" size={18} /> : <Upload size={18} />}
+            {isUploading ? 'Uploading Moment...' : 'Upload New Moment'}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

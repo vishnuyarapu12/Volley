@@ -199,6 +199,8 @@ function RoleDropdown({ value, useCustom, onSelectPreset, onSwitchCustom }) {
 // ─── Edit modal ───────────────────────────────────────────────────────────────
 function EditModal({ player, onSave, onClose }) {
   const [form, setForm] = useState({ ...player });
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef(null);
 
   const isPreset = ROLES.includes(form.role);
   const [useCustom, setUseCustom] = useState(!isPreset);
@@ -247,12 +249,48 @@ function EditModal({ player, onSave, onClose }) {
 
         {/* Player avatar + name header */}
         <div className="flex items-center gap-3 mb-5 pr-8">
-          <div className={`w-10 h-10 rounded-full overflow-hidden border-2 flex-shrink-0`}
-               style={{ borderColor: previewMeta.accent + '88' }}>
+          <div className={`relative w-12 h-12 rounded-full overflow-hidden flex-shrink-0 group`}
+               style={{ borderColor: previewMeta.accent + '88', borderWidth: '2px' }}>
             <img
-              src={getPlayerImage(player.img) || `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' fill='%23334155'/%3E%3Ctext x='20' y='26' font-size='18' text-anchor='middle' fill='%23fbbf24' font-family='sans-serif'%3E${encodeURIComponent(player.name[0])}%3C/text%3E%3C/svg%3E`}
-              alt={player.name}
-              className="w-full h-full object-cover object-top"
+              src={getPlayerImage(form.img) || `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' fill='%23334155'/%3E%3Ctext x='20' y='26' font-size='18' text-anchor='middle' fill='%23fbbf24' font-family='sans-serif'%3E${encodeURIComponent((form.name || 'N')[0])}%3C/text%3E%3C/svg%3E`}
+              alt={form.name}
+              className={`w-full h-full object-cover object-top transition-opacity ${isUploading ? 'opacity-50' : 'group-hover:opacity-60'}`}
+            />
+            {/* Upload overlay */}
+            <div 
+              className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer bg-black/40"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              {isUploading ? (
+                <div className="w-4 h-4 border-2 border-white/80 border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <span className="text-white text-lg drop-shadow-md">📷</span>
+              )}
+            </div>
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              accept="image/*" 
+              className="hidden" 
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                try {
+                  setIsUploading(true);
+                  // Upload to server
+                  const res = await playerAPI.uploadProfilePicture(form.id, file);
+                  if (res?.filename) {
+                    // Update form state with new image filename
+                    set('img', res.filename);
+                  }
+                } catch (err) {
+                  console.error("Failed to upload player image", err);
+                  alert("Failed to upload image.");
+                } finally {
+                  setIsUploading(false);
+                  if (fileInputRef.current) fileInputRef.current.value = '';
+                }
+              }}
             />
           </div>
           <div>
@@ -748,10 +786,27 @@ export default function TeamPlayersShowcase({ isAdmin }) {
   }
 
   function handleSave(updated) {
-    const next = roster.map(p => p.id === updated.id ? { ...p, ...updated } : p);
+    let next;
+    if (roster.some(p => p.id === updated.id)) {
+      next = roster.map(p => p.id === updated.id ? { ...p, ...updated } : p);
+    } else {
+      next = [...roster, updated];
+    }
     setRoster(next);
     saveRoster(next);
     setEditTarget(null);
+  }
+
+  function handleAddPlayer() {
+    const newPlayer = {
+      id: 'new_' + Date.now(),
+      name: 'New Player',
+      role: 'Spiker',
+      jersey: 0,
+      tagline: 'Ready to play',
+      img: ''
+    };
+    setEditTarget(newPlayer);
   }
 
   const filteredRoster = roleFilter
@@ -831,6 +886,19 @@ export default function TeamPlayersShowcase({ isAdmin }) {
             <span className="text-4xl mb-3">🔍</span>
             <p className="text-sm font-semibold">No players found for this role</p>
             <button onClick={() => setRoleFilter(null)} className="mt-3 text-xs text-yellow-400 hover:underline">Clear filter</button>
+          </div>
+        )}
+
+        {/* Add Player Button */}
+        {isAdmin && editMode && (
+          <div className="mt-8 flex justify-center">
+            <button
+              onClick={handleAddPlayer}
+              className="flex items-center gap-2 px-6 py-3 rounded-xl bg-yellow-400 text-yellow-900 font-bold hover:bg-yellow-300 transition-all shadow-lg shadow-yellow-400/20"
+            >
+              <span className="text-lg">+</span>
+              Add a new player
+            </button>
           </div>
         )}
 

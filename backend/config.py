@@ -28,7 +28,7 @@ CORS_ORIGINS = ["*"]  # In production, specify exact origins
 
 # Admin Configuration
 ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME", "admin")
-ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "volleyadmin")
+ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "admin")
 
 # Upload Configuration
 UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads')
