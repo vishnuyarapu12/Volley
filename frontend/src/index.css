@@ -506,7 +506,6 @@ body {
   object-fit: contain;
   object-position: center;
   transform: translateZ(0);
-  image-rendering: auto;
 }
 
 .moments-grain {
