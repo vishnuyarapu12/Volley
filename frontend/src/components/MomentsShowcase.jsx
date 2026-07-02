@@ -3,23 +3,22 @@ import { ChevronLeft, ChevronRight, Sparkles, RefreshCw } from 'lucide-react';
 import { momentImages } from '../utils/momentImages';
 import { pickRandomTitle, formatMomentLabel } from '../utils/momentsTitles';
 
-const DISPLAY_MS = 1700;
-const TRANSITION_MS = 1200;
+const DISPLAY_MS = 4000;
+const TRANSITION_MS = 600;
 
-function SlideLayer({ slide, animClass, zIndex }) {
+const SlideLayer = React.memo(function SlideLayer({ slide, animClass, zIndex }) {
   return (
     <div
       className={`moments-slide-layer absolute inset-0 ${animClass}`}
-      style={{ zIndex }}
+      style={{ zIndex, contain: 'layout paint' }}
     >
       <div className="moments-photo-wrap absolute inset-0">
-        <img src={slide.src} alt={slide.label} className="moments-photo" draggable={false} loading="lazy" style={{ willChange: 'transform, opacity' }} />
+        <img src={slide.src} alt={slide.label} className="moments-photo" draggable={false} />
       </div>
       <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-black/20 pointer-events-none" />
-      <div className="moments-grain" aria-hidden />
     </div>
   );
-}
+});
 
 export default function MomentsShowcase({ hero = false }) {
   const [images, setImages] = useState([]);
@@ -123,9 +122,8 @@ export default function MomentsShowcase({ hero = false }) {
   if (loading) {
     return (
       <div
-        className={`moments-loading flex flex-col items-center justify-center gap-4 ${
-          hero ? 'moments-hero-loading' : 'py-24'
-        }`}
+        className={`moments-loading flex flex-col items-center justify-center gap-4 ${hero ? 'moments-hero-loading' : 'py-24'
+          }`}
       >
         <div className="w-10 h-10 border-2 border-volleyball-accent border-t-transparent rounded-full animate-spin" />
         <p className="text-gray-400 text-sm">Loading moments…</p>
@@ -136,9 +134,8 @@ export default function MomentsShowcase({ hero = false }) {
   if (slides.length === 0) {
     return (
       <div
-        className={`text-center px-6 rounded-2xl border border-white/10 bg-white/5 ${
-          hero ? 'moments-hero-empty' : 'py-20'
-        }`}
+        className={`text-center px-6 rounded-2xl border border-white/10 bg-white/5 ${hero ? 'moments-hero-empty' : 'py-20'
+          }`}
       >
         <Sparkles className="mx-auto text-gray-500 mb-4" size={40} />
         <p className="text-lg font-semibold text-gray-300">No moments yet</p>
@@ -253,18 +250,16 @@ export default function MomentsShowcase({ hero = false }) {
 
         {slides.length > 1 && (
           <div
-            className={`flex justify-center gap-2 backdrop-blur-sm ${
-              hero ? 'py-3 bg-black/40' : 'py-3 bg-slate-900/90'
-            }`}
+            className={`flex justify-center gap-2 backdrop-blur-sm ${hero ? 'py-3 bg-black/40' : 'py-3 bg-slate-900/90'
+              }`}
           >
             {slides.map((slide, i) => (
               <button
                 key={slide.filename}
                 type="button"
                 onClick={() => goTo(i)}
-                className={`rounded-full transition-all duration-500 ease-out ${
-                  i === activeIndex ? 'w-8 h-2 bg-yellow-400' : 'w-2 h-2 bg-gray-600 hover:bg-gray-400'
-                }`}
+                className={`rounded-full transition-all duration-500 ease-out ${i === activeIndex ? 'w-8 h-2 bg-yellow-400' : 'w-2 h-2 bg-gray-600 hover:bg-gray-400'
+                  }`}
                 aria-label={`Go to ${slide.label}`}
               />
             ))}
@@ -273,9 +268,8 @@ export default function MomentsShowcase({ hero = false }) {
       </div>
 
       <div
-        className={`relative min-h-[3.5rem] flex items-center justify-center px-2 ${
-          hero ? 'px-4 py-4' : ''
-        }`}
+        className={`relative min-h-[3.5rem] flex items-center justify-center px-2 ${hero ? 'px-4 py-4' : ''
+          }`}
       >
         <button
           type="button"
