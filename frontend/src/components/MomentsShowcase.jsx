@@ -13,7 +13,7 @@ function SlideLayer({ slide, animClass, zIndex }) {
       style={{ zIndex }}
     >
       <div className="moments-photo-wrap absolute inset-0">
-        <img src={slide.src} alt={slide.label} className="moments-photo" draggable={false} />
+        <img src={slide.src} alt={slide.label} className="moments-photo" draggable={false} loading="lazy" style={{ willChange: 'transform, opacity' }} />
       </div>
       <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-black/20 pointer-events-none" />
       <div className="moments-grain" aria-hidden />

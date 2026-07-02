@@ -43,10 +43,12 @@ export function PlayerProfileCard({ player, isCurrentUser, onEditClick, onClick 
             <img
               src={player.profile_picture}
               alt={player.name}
+              loading="lazy"
               onLoad={() => setImageLoaded(true)}
               className={`w-full h-full object-cover transition-all duration-700 group-hover:scale-110 ${
                 imageLoaded ? 'opacity-100' : 'opacity-0'
               }`}
+              style={{ willChange: 'transform, opacity' }}
             />
             {/* overlay gradient */}
             <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
@@ -189,7 +191,9 @@ export function PlayerLightbox({ players, startIndex, onClose }) {
                 key={player.id}
                 src={player.profile_picture}
                 alt={player.name}
+                loading="lazy"
                 className="w-full h-full object-cover animate-lightboxImgIn"
+                style={{ willChange: 'transform, opacity' }}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
             </>
