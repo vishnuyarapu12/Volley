@@ -25,6 +25,15 @@ for (const [path, mod] of Object.entries(rawModules)) {
 export function getPlayerImage(nameOrFilename) {
   if (!nameOrFilename) return undefined;
 
+  // If it's already a full URL or an API upload path, use it directly
+  if (nameOrFilename.startsWith('http') || nameOrFilename.startsWith('/api/uploads/')) {
+    // If it's a relative API path and we have VITE_API_URL, prepend it
+    if (nameOrFilename.startsWith('/api/') && import.meta.env.VITE_API_URL) {
+      return `${import.meta.env.VITE_API_URL.replace(/\/$/, '')}${nameOrFilename}`;
+    }
+    return nameOrFilename;
+  }
+
   // Try direct name match first (e.g. "Bharath")
   if (playerImages[nameOrFilename]) return playerImages[nameOrFilename];
 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Camera, ChevronLeft, ChevronRight, X, Maximize2 } from 'lucide-react';
+import { getPlayerImage } from '../utils/playerImages';
 
 // Status config
 const STATUS_CONFIG = {
@@ -28,6 +29,8 @@ export function PlayerProfileCard({ player, isCurrentUser, onEditClick, onClick 
 
   useEffect(() => { setImageLoaded(false); }, [player.profile_picture]);
 
+  const resolvedImage = getPlayerImage(player.profile_picture);
+
   return (
     <div
       className="profile-card group relative overflow-hidden rounded-2xl cursor-pointer select-none"
@@ -38,10 +41,10 @@ export function PlayerProfileCard({ player, isCurrentUser, onEditClick, onClick 
     >
       {/* Image / Avatar */}
       <div className="relative w-full aspect-square overflow-hidden bg-gradient-to-br from-slate-700 to-slate-900">
-        {player.profile_picture ? (
+        {resolvedImage ? (
           <>
             <img
-              src={player.profile_picture}
+              src={resolvedImage}
               alt={player.name}
               loading="lazy"
               onLoad={() => setImageLoaded(true)}
@@ -185,11 +188,11 @@ export function PlayerLightbox({ players, startIndex, onClose }) {
 
         {/* Image area */}
         <div className="relative w-full aspect-[4/3] bg-gradient-to-br from-slate-700 to-slate-900 overflow-hidden">
-          {player.profile_picture ? (
+          {getPlayerImage(player.profile_picture) ? (
             <>
               <img
                 key={player.id}
-                src={player.profile_picture}
+                src={getPlayerImage(player.profile_picture)}
                 alt={player.name}
                 loading="lazy"
                 className="w-full h-full object-cover animate-lightboxImgIn"

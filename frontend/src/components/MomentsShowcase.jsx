@@ -96,7 +96,13 @@ export default function MomentsShowcase({ hero = false, isAdmin = false }) {
       const data = await playerAPI.getMoments();
       let combined = [...defaultMoments];
       if (data?.moments) {
-        combined = [...combined, ...data.moments];
+        const resolvedMoments = data.moments.map(m => {
+          if (m.src?.startsWith('/api/') && import.meta.env.VITE_API_URL) {
+            return { ...m, src: `${import.meta.env.VITE_API_URL.replace(/\/$/, '')}${m.src}` };
+          }
+          return m;
+        });
+        combined = [...combined, ...resolvedMoments];
       }
       
       if (combined.length > 0) {

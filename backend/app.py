@@ -339,7 +339,7 @@ def upload_profile_picture():
             # If name is changed here, update it too
             player['name'] = picture_name
             
-        return jsonify({"success": True, "message": "Profile picture updated"})
+        return jsonify({"success": True, "message": "Profile picture updated", "filename": f"/api/uploads/profiles/{filename}"})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

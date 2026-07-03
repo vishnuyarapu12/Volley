@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { ChevronLeft, ChevronRight, Camera, Users, Upload } from 'lucide-react';
 import ImageUploadModal from './ImageUploadModal';
 import { storage } from '../utils/api';
+import { getPlayerImage } from '../utils/playerImages';
 
 const AVATAR_COLORS = ['#fbbf24', '#f87171', '#60a5fa', '#34d399', '#a78bfa', '#fb923c', '#f472b6'];
 
@@ -118,9 +119,9 @@ export default function PlayerShowcase({ players, onUploadSuccess }) {
                       : 'opacity-0 scale-100 z-0 pointer-events-none'
                   }`}
                 >
-                  {player.profile_picture ? (
+                  {getPlayerImage(player.profile_picture) ? (
                     <img
-                      src={player.profile_picture}
+                      src={getPlayerImage(player.profile_picture)}
                       alt={getDisplayName(player)}
                       className="w-full h-full object-cover"
                     />
@@ -215,9 +216,9 @@ export default function PlayerShowcase({ players, onUploadSuccess }) {
                 }`}
               >
                 <div className="w-16 h-16 sm:w-20 sm:h-20">
-                  {player.profile_picture ? (
+                  {getPlayerImage(player.profile_picture) ? (
                     <img
-                      src={player.profile_picture}
+                      src={getPlayerImage(player.profile_picture)}
                       alt={getDisplayName(player)}
                       className="w-full h-full object-cover"
                     />
