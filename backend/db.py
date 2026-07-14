@@ -49,34 +49,14 @@ def init_db():
                 CREATE TABLE IF NOT EXISTS players (
                     id VARCHAR(36) PRIMARY KEY,
                     name VARCHAR(255) NOT NULL,
+                    role VARCHAR(100),
                     team VARCHAR(255),
                     jersey INTEGER,
-                    latitude FLOAT,
-                    longitude FLOAT,
-                    timestamp TIMESTAMP,
-                    status VARCHAR(50),
-                    distance FLOAT,
-                    is_online BOOLEAN DEFAULT TRUE,
                     profile_picture VARCHAR(255),
-                    picture_label VARCHAR(255),
-                    has_gps BOOLEAN DEFAULT FALSE,
-                    location_vote VARCHAR(50),
-                    location_vote_at TIMESTAMP
+                    picture_label VARCHAR(255)
                 );
             """)
 
-            # attendance_stats table
-            cur.execute("""
-                CREATE TABLE IF NOT EXISTS attendance_stats (
-                    player_id VARCHAR(36) PRIMARY KEY REFERENCES players(id) ON DELETE CASCADE,
-                    visits INTEGER DEFAULT 0,
-                    last_visit TIMESTAMP,
-                    arrival_times JSONB,
-                    consecutive_streak INTEGER DEFAULT 0,
-                    total_attendance_percentage INTEGER DEFAULT 0
-                );
-            """)
-            
             conn.commit()
             logger.info("Database initialized successfully.")
     except Exception as e:

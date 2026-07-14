@@ -31,6 +31,23 @@ export const playerAPI = {
     }
   },
 
+  // Save/update a player in the database (admin roster edit)
+  savePlayer: async ({ player_id, name, role, team, jersey }) => {
+    try {
+      const response = await api.post('/join', {
+        player_id: player_id || undefined,
+        name: String(name).trim(),
+        role: String(role || 'Player').trim(),
+        team: String(team || '').trim(),
+        jersey: Number.isFinite(Number(jersey)) ? Number(jersey) : 0,
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error saving player:', error);
+      throw error;
+    }
+  },
+
   // Get all players
   getPlayers: async () => {
     try {

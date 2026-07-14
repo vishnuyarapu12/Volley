@@ -50,10 +50,41 @@ const ROLE_COLORS = {
   'Defensive Specialist': { gradient: 'from-teal-500 to-emerald-600',    bg: '#134e4a', accent: '#2dd4bf', icon: '🔒' },
   'Serving Specialist':   { gradient: 'from-orange-500 to-red-600',      bg: '#9a3412', accent: '#fb923c', icon: '🚀' },
 };
-const DEFAULT_ROLE_COLOR = { gradient: 'from-gray-500 to-slate-600', bg: '#374151', accent: '#9ca3af', icon: '🏐' };
+const DEFAULT_ROLE_COLOR = { gradient: 'from-gray-500 to-slate-600', bg: '#374151', accent: '#9ca3af', icon: '🏐', isCustom: false };
 
-function roleMeta(role) { return ROLE_COLORS[role] || DEFAULT_ROLE_COLOR; }
+// Generate a vibrant color palette from any custom role string
+const _customCache = {};
+function generateRoleColor(role) {
+  if (_customCache[role]) return _customCache[role];
+  // Simple hash → hue (0-360)
+  let hash = 0;
+  for (let i = 0; i < role.length; i++) {
+    hash = role.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const hue = ((hash % 360) + 360) % 360;
+  const icons = ['🏐', '⭐', '🔥', '💫', '🌟', '✨', '💪', '🎖️', '🏅', '🎯'];
+  const icon = icons[((hash % icons.length) + icons.length) % icons.length];
+  _customCache[role] = {
+    // For custom roles we store the CSS gradient string, not Tailwind classes
+    gradient: '',  // empty — we use gradientCSS instead
+    gradientCSS: `linear-gradient(135deg, hsl(${hue}, 70%, 50%), hsl(${(hue + 30) % 360}, 65%, 40%))`,
+    bg: `hsl(${hue}, 60%, 25%)`,
+    accent: `hsl(${hue}, 80%, 65%)`,
+    icon,
+    isCustom: true,
+  };
+  return _customCache[role];
+}
+
+function roleMeta(role) { return ROLE_COLORS[role] || generateRoleColor(role || 'Player'); }
+// Returns Tailwind gradient classes for presets, empty string for custom
 function roleBg(role)   { return roleMeta(role).gradient; }
+// Returns inline style for gradient background (works for both preset and custom)
+function roleGradientStyle(role) {
+  const meta = roleMeta(role);
+  if (meta.gradientCSS) return { background: meta.gradientCSS };
+  return {};
+}
 
 // ─── Custom Role Dropdown ─────────────────────────────────────────────────────
 function RoleDropdown({ value, useCustom, onSelectPreset, onSwitchCustom }) {
@@ -233,7 +264,7 @@ function EditModal({ player, onSave, onClose }) {
            onClick={e => e.stopPropagation()}>
 
         {/* Header accent bar */}
-        <div className={`absolute top-0 left-0 right-0 h-1 rounded-t-3xl bg-gradient-to-r ${roleBg(form.role)}`} />
+        <div className={`absolute top-0 left-0 right-0 h-1 rounded-t-3xl ${roleBg(form.role) ? `bg-gradient-to-r ${roleBg(form.role)}` : ''}`} style={roleGradientStyle(form.role)} />
 
         <button onClick={onClose}
                 className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors text-sm">
@@ -340,7 +371,7 @@ function EditModal({ player, onSave, onClose }) {
             {form.role && (
               <div className="mt-2.5 flex items-center gap-2">
                 <span className="text-[10px] text-gray-500 uppercase tracking-wider">Preview:</span>
-                <span className={`flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-gradient-to-r ${roleBg(form.role)} text-white uppercase tracking-wide`}>
+                <span className={`flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full ${roleBg(form.role) ? `bg-gradient-to-r ${roleBg(form.role)}` : ''} text-white uppercase tracking-wide`} style={roleGradientStyle(form.role)}>
                   <span>{roleMeta(form.role).icon}</span>
                   {form.role}
                 </span>
@@ -392,7 +423,7 @@ function HoverPopup({ player }) {
           <div className="min-w-0">
             <p className="font-black text-white text-sm leading-tight truncate">{player.name}</p>
           </div>
-          <div className={`flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-lg bg-gradient-to-r ${roleBg(player.role)} text-white flex-shrink-0`}>
+          <div className={`flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-lg ${roleBg(player.role) ? `bg-gradient-to-r ${roleBg(player.role)}` : ''} text-white flex-shrink-0`} style={roleGradientStyle(player.role)}>
             <span>{rm.icon}</span>
             <span className="hidden sm:inline">{player.role.split(' ')[0]}</span>
           </div>
@@ -471,7 +502,8 @@ function FullImageModal({ player, onClose }) {
         <div className="flex flex-col items-center gap-2">
           <p className="text-2xl font-black text-white tracking-tight">{player.name}</p>
           <span
-            className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full bg-gradient-to-r ${roleBg(player.role)} text-white uppercase tracking-wide shadow-lg`}
+            className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full ${roleBg(player.role) ? `bg-gradient-to-r ${roleBg(player.role)}` : ''} text-white uppercase tracking-wide shadow-lg`}
+            style={roleGradientStyle(player.role)}
           >
             <span>{rm.icon}</span>
             {player.role}
@@ -529,7 +561,7 @@ function PlayerCard({ player, index, editMode, onEdit, onViewImage }) {
            }}>
 
         {/* Top accent bar — role colour */}
-        <div className={`h-1 w-full bg-gradient-to-r ${roleBg(player.role)} shrink-0`} />
+        <div className={`h-1 w-full ${roleBg(player.role) ? `bg-gradient-to-r ${roleBg(player.role)}` : ''} shrink-0`} style={roleGradientStyle(player.role)} />
 
         {/* Photo area */}
         <div className="pt-5 pb-3 px-3 flex flex-col items-center gap-2 flex-1 w-full">
@@ -559,7 +591,7 @@ function PlayerCard({ player, index, editMode, onEdit, onViewImage }) {
           </p>
 
           {/* Role badge */}
-          <span className={`flex items-center gap-1 text-[9px] sm:text-[10px] font-bold px-2 py-0.5 rounded-full bg-gradient-to-r ${roleBg(player.role)} text-white uppercase tracking-wide`}>
+          <span className={`flex items-center gap-1 text-[9px] sm:text-[10px] font-bold px-2 py-0.5 rounded-full ${roleBg(player.role) ? `bg-gradient-to-r ${roleBg(player.role)}` : ''} text-white uppercase tracking-wide`} style={roleGradientStyle(player.role)}>
             <span className="text-[8px]">{rm.icon}</span>
             {player.role}
           </span>
@@ -713,16 +745,38 @@ export default function TeamPlayersShowcase({ isAdmin }) {
     return () => observer.disconnect();
   }, []);
 
-  function handleSave(updated) {
-    let next;
-    if (roster.some(p => p.id === updated.id)) {
-      next = roster.map(p => p.id === updated.id ? { ...p, ...updated } : p);
-    } else {
-      next = [...roster, updated];
+  async function handleSave(updated) {
+    try {
+      // Persist to database
+      const res = await playerAPI.savePlayer({
+        player_id: updated.id?.startsWith('new_') ? undefined : updated.id,
+        name: updated.name,
+        role: updated.role,
+        team: updated.team || '',
+        jersey: updated.jersey || 0,
+      });
+
+      // Use the server-returned id (important for new players)
+      const savedPlayer = {
+        ...updated,
+        id: res.player_id || updated.id,
+      };
+
+      let next;
+      if (roster.some(p => p.id === updated.id || p.id === savedPlayer.id)) {
+        next = roster.map(p =>
+          (p.id === updated.id || p.id === savedPlayer.id) ? { ...p, ...savedPlayer } : p
+        );
+      } else {
+        next = [...roster, savedPlayer];
+      }
+      setRoster(next);
+      saveRoster(next);
+      setEditTarget(null);
+    } catch (err) {
+      console.error('Failed to save player to database:', err);
+      alert('Failed to save player. Please try again.');
     }
-    setRoster(next);
-    saveRoster(next);
-    setEditTarget(null);
   }
 
   function handleAddPlayer() {
