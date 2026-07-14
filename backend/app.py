@@ -27,15 +27,22 @@ CORS(app, origins=config.CORS_ORIGINS)
 os.makedirs(config.MOMENTS_UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(config.PROFILES_UPLOAD_FOLDER, exist_ok=True)
 
+# Database Initialization
+try:
+    from db import init_db
+    init_db()
+except Exception as e:
+    print(f"Warning: db init failed - {e}")
+
 # All routes are registered under /api so the frontend can call
 # fetch(`${VITE_API_URL}/api/...`) in production and the Vite
 # dev proxy rewrites /api → / before hitting Flask locally.
 from flask import Blueprint
 api_bp = Blueprint('api', __name__, url_prefix='/api')
 
-# In-memory storage
-players_db = {}  # {player_id: {name, team, jersey, lat, lon, timestamp, stats}}
-attendance_stats = {}  # {player_id: {visits, last_visit, arrival_times}}
+# Supabase database initialization handled in main and db.py
+from db import init_db, query_db
+
 _last_reset_date = datetime.now().strftime('%Y-%m-%d')  # tracks daily reset
 
 LOCATION_VOTE_OPTIONS = (
@@ -58,11 +65,10 @@ def check_daily_reset():
         return
     # New day detected — reset every player's daily state
     _last_reset_date = today
-    for player in players_db.values():
-        player['location_vote'] = None
-        player['location_vote_at'] = None
-        player['is_online'] = False
-        player['status'] = 'Offline'
+    query_db("""
+        UPDATE players
+        SET location_vote = NULL, location_vote_at = NULL, is_online = FALSE, status = 'Offline'
+    """)
     print(f"[Daily Reset] All player statuses reset for {today}")
 
 
@@ -80,7 +86,7 @@ def apply_ground_location(latitude, longitude):
         raise ValueError("Invalid latitude or longitude")
     config.GROUND_LATITUDE = lat
     config.GROUND_LONGITUDE = lon
-    recalculate_all_players_distances(players_db)
+    recalculate_all_players_distances()
     return {"latitude": lat, "longitude": lon}
 
 
@@ -124,30 +130,25 @@ def build_vote_player_payload(player):
 
 
 def ensure_player_record(player_id, data=None):
-    """Create a minimal player record if missing (e.g. after server restart)."""
-    if player_id in players_db:
-        return players_db[player_id]
-
+    """Create a minimal player record if missing in Supabase."""
     data = data or {}
-    players_db[player_id] = {
-        "id": player_id,
-        "name": data.get('name', 'Unknown Player'),
-        "team": data.get('team', ''),
-        "jersey": data.get('jersey', 0),
-        "latitude": None,
-        "longitude": None,
-        "timestamp": datetime.now().isoformat(),
-        "status": "Offline",
-        "distance": 0,
-        "is_online": True,
-        "profile_picture": None,
-        "picture_label": None,
-        "has_gps": False,
-        "location_vote": None,
-        "location_vote_at": None,
-    }
-    get_stats_for_player(player_id)
-    return players_db[player_id]
+    name = data.get('name', 'Unknown Player')
+    team = data.get('team', '')
+    jersey = data.get('jersey', 0)
+    
+    query_db("""
+        INSERT INTO players (id, name, team, jersey, timestamp, status, distance, is_online, has_gps)
+        VALUES (%s, %s, %s, %s, NOW(), 'Offline', 0, TRUE, FALSE)
+        ON CONFLICT (id) DO NOTHING
+    """, (player_id, name, team, jersey))
+    
+    query_db("""
+        INSERT INTO attendance_stats (player_id, visits, consecutive_streak, total_attendance_percentage)
+        VALUES (%s, 0, 0, 0)
+        ON CONFLICT (player_id) DO NOTHING
+    """, (player_id,))
+    
+    return query_db("SELECT * FROM players WHERE id = %s", (player_id,), one=True)
 
 
 def build_map_player_payload(player):
@@ -162,7 +163,7 @@ def build_map_player_payload(player):
         "latitude": float(player['latitude']),
         "longitude": float(player['longitude']),
         "last_seen": format_last_seen(player),
-        "timestamp": player['timestamp'],
+        "timestamp": player['timestamp'].isoformat() if hasattr(player['timestamp'], 'isoformat') else player['timestamp'],
         "profile_picture": player.get('profile_picture'),
         "picture_label": player.get('picture_label'),
         "has_gps": player.get('has_gps', True),
@@ -171,15 +172,16 @@ def build_map_player_payload(player):
 
 def get_stats_for_player(player_id):
     """Get attendance statistics for a player"""
-    if player_id not in attendance_stats:
-        attendance_stats[player_id] = {
+    stats = query_db("SELECT * FROM attendance_stats WHERE player_id = %s", (player_id,), one=True)
+    if not stats:
+        return {
             "visits": 0,
             "last_visit": None,
             "arrival_times": [],
             "consecutive_streak": 0,
             "total_attendance_percentage": 0
         }
-    return attendance_stats[player_id]
+    return stats
 
 
 # ==================== API ENDPOINTS ====================
@@ -331,15 +333,23 @@ def upload_profile_picture():
         
         file.save(os.path.join(config.PROFILES_UPLOAD_FOLDER, filename))
         
-        # Update player record
-        player = ensure_player_record(player_id)
-        player['profile_picture'] = f"/api/uploads/profiles/{filename}"
+        # Update player record in DB
+        ensure_player_record(player_id)
+        pic_url = f"/api/uploads/profiles/{filename}"
         if picture_name:
-            player['picture_label'] = picture_name
-            # If name is changed here, update it too
-            player['name'] = picture_name
+            query_db("""
+                UPDATE players 
+                SET profile_picture = %s, picture_label = %s, name = %s
+                WHERE id = %s
+            """, (pic_url, picture_name, picture_name, player_id))
+        else:
+            query_db("""
+                UPDATE players 
+                SET profile_picture = %s
+                WHERE id = %s
+            """, (pic_url, player_id))
             
-        return jsonify({"success": True, "message": "Profile picture updated", "filename": f"/api/uploads/profiles/{filename}"})
+        return jsonify({"success": True, "message": "Profile picture updated", "filename": pic_url})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -371,27 +381,16 @@ def join_team():
             jersey = 0
 
         player_id = generate_player_id()
-        now = datetime.now().isoformat()
 
-        players_db[player_id] = {
-            "id": player_id,
-            "name": name,
-            "team": (data.get('team') or '').strip(),
-            "jersey": jersey,
-            "latitude": None,
-            "longitude": None,
-            "timestamp": now,
-            "status": "Offline",
-            "distance": 0,
-            "is_online": True,
-            "profile_picture": None,
-            "picture_label": None,
-            "has_gps": False,
-            "location_vote": None,
-            "location_vote_at": None,
-        }
-
-        get_stats_for_player(player_id)
+        query_db("""
+            INSERT INTO players (id, name, team, jersey, timestamp, status, distance, is_online, has_gps)
+            VALUES (%s, %s, %s, %s, NOW(), 'Offline', 0, TRUE, FALSE)
+        """, (player_id, name, data.get('team', '').strip(), jersey))
+        
+        query_db("""
+            INSERT INTO attendance_stats (player_id, visits, consecutive_streak, total_attendance_percentage)
+            VALUES (%s, 0, 0, 0)
+        """, (player_id,))
 
         return jsonify({
             "success": True,
@@ -432,54 +431,33 @@ def location_update():
         if not is_valid_coordinate(latitude, longitude):
             return jsonify({"error": "Invalid latitude or longitude"}), 400
         
-        # Auto-register player if not found (server may have restarted)
-        if player_id not in players_db:
-            players_db[player_id] = {
-                "id": player_id,
-                "name": data.get('name', 'Unknown Player'),
-                "team": data.get('team', ''),
-                "jersey": data.get('jersey', 0),
-                "latitude": latitude,
-                "longitude": longitude,
-                "timestamp": datetime.now().isoformat(),
-                "status": "Offline",
-                "distance": 0,
-                "is_online": True,
-                "profile_picture": None,
-                "picture_label": None,
-                "has_gps": False
-            }
-            get_stats_for_player(player_id)  # Initialize stats
+        # Auto-register player if not found
+        player = ensure_player_record(player_id, data)
         
-        # Update player location
-        now = datetime.now()
-        players_db[player_id]['latitude'] = latitude
-        players_db[player_id]['longitude'] = longitude
-        players_db[player_id]['has_gps'] = True
-        players_db[player_id]['timestamp'] = now.isoformat()
-        players_db[player_id]['is_online'] = True
-        
-        # Calculate distance and status
         distance = calculate_distance(
             latitude, longitude,
             config.GROUND_LATITUDE, config.GROUND_LONGITUDE
         )
-        
         status = get_player_status(distance)
         
-        players_db[player_id]['distance'] = round(distance, 2)
-        players_db[player_id]['status'] = status
+        query_db("""
+            UPDATE players 
+            SET latitude = %s, longitude = %s, has_gps = TRUE, timestamp = NOW(), is_online = TRUE, distance = %s, status = %s
+            WHERE id = %s
+        """, (latitude, longitude, round(distance, 2), status, player_id))
         
         # Update attendance stats if player just arrived
         stats = get_stats_for_player(player_id)
-        if status == "At Ground" and stats.get('last_status') != "At Ground":
-            stats['visits'] += 1
-            stats['last_visit'] = now.isoformat()
-            arrival_time = now.strftime("%H:%M")
-            stats['arrival_times'].append(arrival_time)
-        
-        stats['last_status'] = status
-        
+        # We need a way to check last_status. Let's just check if player['status'] was not 'At Ground'
+        if status == "At Ground" and player.get('status') != "At Ground":
+            now_iso = datetime.now().isoformat()
+            arrival_time = datetime.now().strftime("%H:%M")
+            query_db("""
+                UPDATE attendance_stats
+                SET visits = visits + 1, last_visit = %s, arrival_times = arrival_times || %s::jsonb
+                WHERE player_id = %s
+            """, (now_iso, json.dumps([arrival_time]), player_id))
+            
         return jsonify({
             "success": True,
             "player_id": player_id,
@@ -519,32 +497,34 @@ def cast_location_vote():
             }), 400
 
         player = ensure_player_record(player_id, data)
-        now = datetime.now()
+        now_iso = datetime.now().isoformat()
 
-        if data.get('name'):
-            player['name'] = data['name']
-        if data.get('team') is not None:
-            player['team'] = data['team']
-        if data.get('jersey') is not None:
-            player['jersey'] = data['jersey']
+        name = data.get('name', player['name'])
+        team = data.get('team', player['team'])
+        jersey = data.get('jersey', player['jersey'])
 
-        player['location_vote'] = vote
-        player['location_vote_at'] = now.isoformat()
-        player['timestamp'] = now.isoformat()
-        player['is_online'] = True
+        query_db("""
+            UPDATE players
+            SET name = %s, team = %s, jersey = %s, location_vote = %s, location_vote_at = NOW(), timestamp = NOW(), is_online = TRUE
+            WHERE id = %s
+        """, (name, team, jersey, vote, player_id))
 
-        stats = get_stats_for_player(player_id)
-        if vote == "At Ground" and stats.get('last_status') != "At Ground":
-            stats['visits'] += 1
-            stats['last_visit'] = now.isoformat()
-            stats['arrival_times'].append(now.strftime("%H:%M"))
-        stats['last_status'] = vote
+        if vote == "At Ground" and player.get('location_vote') != "At Ground":
+            arrival_time = datetime.now().strftime("%H:%M")
+            query_db("""
+                UPDATE attendance_stats
+                SET visits = visits + 1, last_visit = %s, arrival_times = COALESCE(arrival_times, '[]'::jsonb) || %s::jsonb
+                WHERE player_id = %s
+            """, (now_iso, json.dumps([arrival_time]), player_id))
+            
+        # Re-fetch updated player
+        player = query_db("SELECT * FROM players WHERE id = %s", (player_id,), one=True)
 
         return jsonify({
             "success": True,
             "player_id": player_id,
             "vote": vote,
-            "voted_at": player['location_vote_at'],
+            "voted_at": player['location_vote_at'].isoformat() if player['location_vote_at'] else None,
             "player": build_vote_player_payload(player),
         }), 200
 
@@ -559,11 +539,9 @@ def get_location_votes():
     try:
         check_daily_reset()
 
-        players_list = [
-            build_vote_player_payload(player)
-            for player in players_db.values()
-            if player.get('is_online') or player.get('location_vote')
-        ]
+        db_players = query_db("SELECT * FROM players WHERE is_online = TRUE OR location_vote IS NOT NULL")
+        players_list = [build_vote_player_payload(player) for player in (db_players or [])]
+        
         players_list.sort(
             key=lambda p: (
                 p['location_vote'] is None,
@@ -603,13 +581,10 @@ def get_location_votes():
 def get_players():
     """Get all active players"""
     try:
-        cleanup_offline_players(players_db, config.OFFLINE_THRESHOLD)
+        cleanup_offline_players(config.OFFLINE_THRESHOLD)
         
-        # Separate players by status
-        players_list = []
-        for player in players_db.values():
-            if player_has_map_location(player):
-                players_list.append(build_map_player_payload(player))
+        db_players = query_db("SELECT * FROM players WHERE is_online = TRUE AND has_gps = TRUE AND latitude IS NOT NULL AND longitude IS NOT NULL")
+        players_list = [build_map_player_payload(p) for p in (db_players or [])]
         
         # Sort by distance from ground
         players_list.sort(key=lambda x: x['distance'])
@@ -628,12 +603,10 @@ def get_players():
 def get_map_data():
     """Single payload for the live map: ground + all players with GPS."""
     try:
-        cleanup_offline_players(players_db, config.OFFLINE_THRESHOLD)
+        cleanup_offline_players(config.OFFLINE_THRESHOLD)
 
-        players_list = []
-        for player in players_db.values():
-            if player_has_map_location(player):
-                players_list.append(build_map_player_payload(player))
+        db_players = query_db("SELECT * FROM players WHERE is_online = TRUE AND has_gps = TRUE AND latitude IS NOT NULL AND longitude IS NOT NULL")
+        players_list = [build_map_player_payload(p) for p in (db_players or [])]
         players_list.sort(key=lambda x: x['distance'])
 
         return jsonify({
@@ -670,7 +643,8 @@ def get_stats():
         not_coming = 0
         no_vote = 0
 
-        online_players = [p for p in players_db.values() if p.get('is_online') or p.get('location_vote')]
+        db_players = query_db("SELECT * FROM players WHERE is_online = TRUE OR location_vote IS NOT NULL")
+        online_players = db_players or []
         for player in online_players:
             vote = player.get('location_vote')
             if vote == 'At Ground':
@@ -737,9 +711,11 @@ def get_leaderboard():
     try:
         leaderboard = []
         
-        for player_id, player in players_db.items():
-            stats = get_stats_for_player(player_id)
-            total_visits = stats.get('visits', 0)
+        db_players = query_db("SELECT p.*, s.visits, s.last_visit, s.consecutive_streak FROM players p LEFT JOIN attendance_stats s ON p.id = s.player_id")
+        
+        for player in (db_players or []):
+            total_visits = player.get('visits') or 0
+            player_id = player['id']
             
             if total_visits > 0:
                 # Calculate attendance percentage (visits / recent days)
@@ -753,8 +729,8 @@ def get_leaderboard():
                     "jersey": player['jersey'],
                     "visits": total_visits,
                     "attendance_percentage": int(attendance_pct),
-                    "last_visit": stats.get('last_visit', 'Never'),
-                    "streak": stats.get('consecutive_streak', 0)
+                    "last_visit": str(player.get('last_visit')) if player.get('last_visit') else 'Never',
+                    "streak": player.get('consecutive_streak') or 0
                 })
         
         # Sort by attendance percentage and visits
@@ -779,10 +755,12 @@ def get_leaderboard():
 def ground_status():
     """Get ground status and readiness"""
     try:
-        cleanup_offline_players(players_db, config.OFFLINE_THRESHOLD)
+        cleanup_offline_players(config.OFFLINE_THRESHOLD)
         
-        at_ground = sum(1 for p in players_db.values() if p['is_online'] and p['status'] == 'At Ground')
-        total_online = sum(1 for p in players_db.values() if p['is_online'])
+        counts = query_db("SELECT COUNT(*) as total_online, SUM(CASE WHEN status = 'At Ground' THEN 1 ELSE 0 END) as at_ground FROM players WHERE is_online = TRUE", one=True)
+        total_online = counts['total_online'] or 0
+        at_ground = counts['at_ground'] or 0
+        total_players = query_db("SELECT COUNT(*) as c FROM players", one=True)['c']
         
         if at_ground < config.MIN_PLAYERS_FOR_FULL_MATCH:
             status = "Not Enough Players"
@@ -803,7 +781,7 @@ def ground_status():
             "can_start_match": can_start_match,
             "players_at_ground": at_ground,
             "players_online": total_online,
-            "total_players": len(players_db)
+            "total_players": total_players
         }), 200
     
     except Exception as e:
@@ -814,10 +792,10 @@ def ground_status():
 def get_player_details(player_id):
     """Get detailed information about a specific player"""
     try:
-        if player_id not in players_db:
+        player = query_db("SELECT * FROM players WHERE id = %s", (player_id,), one=True)
+        if not player:
             return jsonify({"error": "Player not found"}), 404
         
-        player = players_db[player_id]
         stats = get_stats_for_player(player_id)
         
         return jsonify({
@@ -853,14 +831,14 @@ def go_offline():
         data = request.get_json(silent=True) or {}
         player_id = data.get('player_id')
 
-        if not player_id or player_id not in players_db:
+        if not player_id:
             return jsonify({"success": True}), 200  # silently succeed
 
-        player = players_db[player_id]
-        player['is_online'] = False
-        player['status'] = 'Offline'
-        player['location_vote'] = None
-        player['location_vote_at'] = None
+        query_db("""
+            UPDATE players
+            SET is_online = FALSE, status = 'Offline', location_vote = NULL, location_vote_at = NULL
+            WHERE id = %s
+        """, (player_id,))
 
         return jsonify({"success": True, "player_id": player_id}), 200
 
@@ -871,9 +849,8 @@ def go_offline():
 @api_bp.route('/reset', methods=['POST'])
 def reset_database():
     """Reset all data (for testing/demo purposes)"""
-    global players_db, attendance_stats
-    players_db = {}
-    attendance_stats = {}
+    query_db("TRUNCATE TABLE attendance_stats CASCADE")
+    query_db("TRUNCATE TABLE players CASCADE")
     return jsonify({"success": True, "message": "Database reset"}), 200
 
 
@@ -975,11 +952,11 @@ def save_ground_location():
 def get_player_picture(player_id):
     """Get profile picture for a player"""
     try:
-        if player_id not in players_db:
+        player = query_db("SELECT profile_picture, name FROM players WHERE id = %s", (player_id,), one=True)
+        if not player:
             return jsonify({"error": "Player not found"}), 404
         
-        player = players_db[player_id]
-        picture = player.get('profile_picture', None)
+        picture = player.get('profile_picture')
         
         if not picture:
             return jsonify({"picture": None, "player_name": player.get('name')}), 200
@@ -998,10 +975,9 @@ def get_player_picture(player_id):
 def get_player_current_location(player_id):
     """Get current location of a player"""
     try:
-        if player_id not in players_db:
+        player = query_db("SELECT * FROM players WHERE id = %s", (player_id,), one=True)
+        if not player:
             return jsonify({"error": "Player not found"}), 404
-        
-        player = players_db[player_id]
         
         return jsonify({
             "success": True,
@@ -1011,7 +987,7 @@ def get_player_current_location(player_id):
             "longitude": player.get('longitude'),
             "status": player.get('status'),
             "distance": player.get('distance'),
-            "timestamp": player.get('timestamp')
+            "timestamp": player['timestamp'].isoformat() if hasattr(player.get('timestamp'), 'isoformat') else player.get('timestamp')
         }), 200
     
     except Exception as e:

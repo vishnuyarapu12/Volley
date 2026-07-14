@@ -1,6 +1,14 @@
 """Configuration settings for VolleyTrack backend"""
 import os
 from datetime import datetime
+from dotenv import load_dotenv
+
+# Try to load .env from backend directory, then fallback to frontend directory
+load_dotenv()
+if not os.environ.get("DATABASE_URL"):
+    load_dotenv(os.path.join(os.path.dirname(__file__), '..', 'frontend', '.env'))
+
+DATABASE_URL = os.environ.get("DATABASE_URL", "")
 
 # Ground location (Configurable) - Set to your actual ground using the app's "Use My Location as Ground" button
 GROUND_LATITUDE = 17.4811  # Hyderabad, Telangana (default - update via app)

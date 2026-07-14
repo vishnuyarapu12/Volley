@@ -61,23 +61,21 @@ def get_player_status(distance):
         return "Away"
 
 
-def cleanup_offline_players(players_db, offline_threshold):
+def cleanup_offline_players(offline_threshold):
     """
     Mark players as offline if no update received for offline_threshold seconds.
     
     Args:
-        players_db: Dictionary of players
         offline_threshold: Time in seconds (default 300 = 5 minutes)
     """
-    now = datetime.now()
-    
-    for player_id, player in players_db.items():
-        last_update = datetime.fromisoformat(player['timestamp'])
-        time_since_update = (now - last_update).total_seconds()
-        
-        if time_since_update > offline_threshold:
-            player['is_online'] = False
-            player['status'] = 'Offline'
+    from db import query_db
+    # Execute UPDATE query
+    query_db("""
+        UPDATE players
+        SET is_online = FALSE, status = 'Offline'
+        WHERE is_online = TRUE 
+          AND timestamp < NOW() - INTERVAL '%s seconds'
+    """, (offline_threshold,))
 
 
 def format_time_ago(timestamp_str):
@@ -139,10 +137,47 @@ def recalculate_player_distance_status(player):
         player['status'] = 'Offline'
 
 
-def recalculate_all_players_distances(players_db):
+def recalculate_all_players_distances():
     """Recalculate every player after ground location changes."""
-    for player in players_db.values():
-        recalculate_player_distance_status(player)
+    from db import query_db
+    
+    players = query_db("SELECT id, latitude, longitude, is_online FROM players")
+    if not players: return
+    
+    # We will build a batch update
+    updates = []
+    for player in players:
+        # dict row doesn't have mutability for our helper, so we do it inline
+        if player['latitude'] is None or player['longitude'] is None:
+            continue
+            
+        dist = calculate_distance(
+            float(player['latitude']),
+            float(player['longitude']),
+            float(config.GROUND_LATITUDE),
+            float(config.GROUND_LONGITUDE),
+        )
+        dist = round(dist, 2)
+        
+        status = get_player_status(dist) if player.get('is_online') else 'Offline'
+        
+        # Add to batch
+        updates.append((dist, status, player['id']))
+        
+    if updates:
+        from db import get_db_connection, release_db_connection
+        conn = get_db_connection()
+        try:
+            with conn.cursor() as cur:
+                from psycopg2.extras import execute_values
+                execute_values(
+                    cur,
+                    "UPDATE players SET distance = data.distance, status = data.status FROM (VALUES %s) AS data (distance, status, id) WHERE players.id = data.id",
+                    updates
+                )
+                conn.commit()
+        finally:
+            release_db_connection(conn)
 
 
 def player_has_map_location(player):
