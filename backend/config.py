@@ -1,6 +1,5 @@
 """Configuration settings for VolleyTrack backend"""
 import os
-from datetime import datetime
 from dotenv import load_dotenv
 
 # Try to load .env from backend directory, then fallback to frontend directory
@@ -11,14 +10,21 @@ if not os.environ.get("DATABASE_URL"):
 DATABASE_URL = os.environ.get("DATABASE_URL", "")
 
 # Server configuration
-DEBUG = True
+# Set FLASK_DEBUG=0 in production environment variables
+DEBUG = os.environ.get("FLASK_DEBUG", "0") == "1"
 HOST = "0.0.0.0"
-PORT = 5000
+PORT = int(os.environ.get("PORT", 5000))
+
+# Flask secret key (used for session signing — set in env for production)
+SECRET_KEY = os.environ.get("SECRET_KEY", os.urandom(32).hex())
 
 # CORS configuration
-CORS_ORIGINS = ["*"]  # In production, specify exact origins
+# Set CORS_ORIGINS env var as comma-separated domains in production
+# e.g. CORS_ORIGINS=https://volley-htbr.onrender.com,http://localhost:3000
+_cors_env = os.environ.get("CORS_ORIGINS", "")
+CORS_ORIGINS = [o.strip() for o in _cors_env.split(",") if o.strip()] if _cors_env else ["*"]
 
-# Admin Configuration
+# Admin Configuration — MUST be set via environment variables in production
 ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME", "admin")
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "admin")
 
