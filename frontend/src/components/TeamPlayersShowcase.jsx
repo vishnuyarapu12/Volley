@@ -35,14 +35,7 @@ function saveRoster(roster) {
 }
 
 // ─── Status helpers ────────────────────────────────────────────────────────────
-const STATUS_META = {
-  'At Ground':  { dot: 'bg-green-400',  label: 'At Ground',  text: 'text-green-400',  ring: 'shadow-green-500/50'  },
-  'On The Way': { dot: 'bg-yellow-400', label: 'On The Way', text: 'text-yellow-400', ring: 'shadow-yellow-500/50' },
-  'Nearby':     { dot: 'bg-orange-400', label: 'Nearby',     text: 'text-orange-400', ring: 'shadow-orange-500/50' },
-  'Away':       { dot: 'bg-red-400',    label: 'Away',       text: 'text-red-400',    ring: 'shadow-red-500/50'    },
-  'Offline':    { dot: 'bg-gray-500',   label: 'Offline',    text: 'text-gray-400',   ring: 'shadow-gray-500/30'   },
-};
-function statusMeta(s) { return STATUS_META[s] || STATUS_META['Offline']; }
+// Status helpers removed as location is no longer tracked
 
 // ─── Role badge colours ────────────────────────────────────────────────────────
 const ROLE_COLORS = {
@@ -388,8 +381,7 @@ function EditModal({ player, onSave, onClose }) {
 }
 
 // ─── Hover popup overlay ──────────────────────────────────────────────────────
-function HoverPopup({ player, liveStatus, stats }) {
-  const sm = statusMeta(liveStatus || player.status || 'Offline');
+function HoverPopup({ player }) {
   const rm = roleMeta(player.role);
   return (
     <div className="tp-popup absolute inset-x-0 bottom-0 z-20 rounded-b-[22px] overflow-hidden"
@@ -399,7 +391,6 @@ function HoverPopup({ player, liveStatus, stats }) {
         <div className="flex items-center justify-between gap-2">
           <div className="min-w-0">
             <p className="font-black text-white text-sm leading-tight truncate">{player.name}</p>
-            <p className={`text-xs font-semibold ${sm.text}`}>{sm.label}</p>
           </div>
           <div className={`flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-lg bg-gradient-to-r ${roleBg(player.role)} text-white flex-shrink-0`}>
             <span>{rm.icon}</span>
@@ -408,10 +399,8 @@ function HoverPopup({ player, liveStatus, stats }) {
         </div>
 
         {/* Stats grid */}
-        <div className="grid grid-cols-3 gap-1.5 pt-0.5">
+        <div className="flex justify-center pt-0.5">
           <StatPill label="Jersey" value={`#${player.jersey}`} accent="text-yellow-400" />
-          <StatPill label="Matches" value={stats?.visits ?? '–'} accent="text-blue-400" />
-          <StatPill label="Attend." value={stats?.attendance ? `${stats.attendance}%` : '–'} accent="text-green-400" />
         </div>
 
         {player.tagline && (
@@ -424,7 +413,7 @@ function HoverPopup({ player, liveStatus, stats }) {
 
 function StatPill({ label, value, accent }) {
   return (
-    <div className="flex flex-col items-center py-1.5 rounded-xl" style={{ background: 'rgba(255,255,255,0.06)' }}>
+    <div className="flex flex-col items-center px-4 py-1.5 rounded-xl" style={{ background: 'rgba(255,255,255,0.06)' }}>
       <span className={`text-sm font-black ${accent}`}>{value}</span>
       <span className="text-[8px] text-gray-500 uppercase tracking-wider mt-0.5">{label}</span>
     </div>
@@ -500,11 +489,9 @@ function FullImageModal({ player, onClose }) {
 }
 
 // ─── Single player card ───────────────────────────────────────────────────────
-function PlayerCard({ player, index, liveStatus, stats, editMode, onEdit, onViewImage }) {
+function PlayerCard({ player, index, editMode, onEdit, onViewImage }) {
   const [hovered, setHovered] = useState(false);
-  const sm = statusMeta(liveStatus || 'Offline');
   const rm = roleMeta(player.role);
-  const isOnline = liveStatus && liveStatus !== 'Offline';
 
   // Double-tap detection for mobile
   const lastTapRef = useRef(0);
@@ -546,16 +533,8 @@ function PlayerCard({ player, index, liveStatus, stats, editMode, onEdit, onView
 
         {/* Photo area */}
         <div className="pt-5 pb-3 px-3 flex flex-col items-center gap-2 flex-1 w-full">
-          {/* Avatar with status ring */}
           <div className={`relative shrink-0 transition-all duration-300 ${hovered ? 'scale-110' : 'scale-100'}`}>
-            {/* Status glow ring */}
-            {isOnline && (
-              <div className={`absolute inset-0 rounded-full animate-ping-slow opacity-40 ${sm.dot.replace('bg-', 'ring-2 ring-')}`}
-                   style={{ boxShadow: `0 0 16px 4px currentColor` }} />
-            )}
-
-            <div className={`relative w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden border-2 transition-all duration-300 ${isOnline ? `border-current ${sm.text} shadow-lg ${sm.ring}` : 'border-white/15'}`}
-                 style={isOnline ? { boxShadow: `0 0 12px 2px ${sm.dot.includes('green') ? '#4ade80' : sm.dot.includes('yellow') ? '#facc15' : sm.dot.includes('orange') ? '#fb923c' : '#9ca3af'}55` } : {}}>
+            <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden border-2 border-white/15 transition-all duration-300">
               <img
                 src={getPlayerImage(player.img) || `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%23334155'/%3E%3Ctext x='32' y='40' font-size='28' text-anchor='middle' fill='%23fbbf24' font-family='sans-serif'%3E${encodeURIComponent(player.name[0])}%3C/text%3E%3C/svg%3E`}
                 alt={player.name}
@@ -572,9 +551,6 @@ function PlayerCard({ player, index, liveStatus, stats, editMode, onEdit, onView
                  }}>
               {player.jersey}
             </div>
-
-            {/* Live status dot */}
-            <div className={`absolute top-0 right-0 w-3 h-3 rounded-full border-2 border-[#08102a] ${sm.dot} ${isOnline ? 'animate-pulse-slow' : ''}`} />
           </div>
 
           {/* Name */}
@@ -587,16 +563,10 @@ function PlayerCard({ player, index, liveStatus, stats, editMode, onEdit, onView
             <span className="text-[8px]">{rm.icon}</span>
             {player.role}
           </span>
-
-          {/* Status indicator */}
-          <div className="flex items-center gap-1 mt-auto">
-            <span className={`w-1.5 h-1.5 rounded-full ${sm.dot} ${isOnline ? 'animate-pulse' : ''}`} />
-            <span className={`text-[9px] font-semibold ${sm.text}`}>{sm.label}</span>
-          </div>
         </div>
 
         {/* Hover popup */}
-        {hovered && <HoverPopup player={player} liveStatus={liveStatus} stats={stats} />}
+        {hovered && <HoverPopup player={player} />}
 
         {/* Edit button */}
         {editMode && (
@@ -698,26 +668,16 @@ function RoleSummaryBar({ roster, activeFilter, onFilter }) {
 }
 
 // ─── Team stats summary ───────────────────────────────────────────────────────
-function TeamStatsSummary({ roster, liveData }) {
-  const online = roster.filter(p => {
-    const d = liveData[p.name.toLowerCase()];
-    return d?.status && d.status !== 'Offline';
-  }).length;
-  const atGround = roster.filter(p => {
-    const d = liveData[p.name.toLowerCase()];
-    return d?.status === 'At Ground';
-  }).length;
+function TeamStatsSummary({ roster }) {
   const uniqueRoles = new Set(roster.map(p => p.role)).size;
 
   const stats = [
     { label: 'Players', value: roster.length, icon: '👥', accent: '#60a5fa' },
-    { label: 'Online', value: online, icon: '🟢', accent: '#4ade80' },
-    { label: 'At Ground', value: atGround, icon: '📍', accent: '#fbbf24' },
     { label: 'Positions', value: uniqueRoles, icon: '🎯', accent: '#c084fc' },
   ];
 
   return (
-    <div className="grid grid-cols-4 gap-2 mb-6">
+    <div className="grid grid-cols-2 gap-4 mb-6 max-w-sm">
       {stats.map(s => (
         <div
           key={s.label}
@@ -736,7 +696,6 @@ function TeamStatsSummary({ roster, liveData }) {
 // ─── Main showcase ────────────────────────────────────────────────────────────
 export default function TeamPlayersShowcase({ isAdmin }) {
   const [roster, setRoster] = useState(loadRoster);
-  const [liveData, setLiveData] = useState({});
   const [editMode, setEditMode] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
   const [imagePlayer, setImagePlayer] = useState(null);
@@ -753,37 +712,6 @@ export default function TeamPlayersShowcase({ isAdmin }) {
     if (sectionRef.current) observer.observe(sectionRef.current);
     return () => observer.disconnect();
   }, []);
-
-  // Fetch live player statuses
-  const fetchLive = useCallback(async () => {
-    try {
-      const data = await playerAPI.getLocationVotes();
-      if (!data?.players) return;
-      const map = {};
-      for (const p of data.players) {
-        map[p.name?.toLowerCase()] = {
-          status: p.location_vote || p.gps_status || 'Offline',
-          visits: p.visits ?? null,
-        };
-      }
-      setLiveData(map);
-    } catch (_) { /* silently ignore */ }
-  }, []);
-
-  useEffect(() => {
-    fetchLive();
-    const id = setInterval(fetchLive, 30_000);
-    return () => clearInterval(id);
-  }, [fetchLive]);
-
-  function getLiveStatus(player) {
-    return liveData[player.name.toLowerCase()]?.status || null;
-  }
-  function getStats(player) {
-    const d = liveData[player.name.toLowerCase()];
-    if (!d) return null;
-    return { visits: d.visits, attendance: d.visits != null ? Math.min(100, d.visits * 10) : null };
-  }
 
   function handleSave(updated) {
     let next;
@@ -852,7 +780,7 @@ export default function TeamPlayersShowcase({ isAdmin }) {
         </div>
 
         {/* ── Team stats ── */}
-        <TeamStatsSummary roster={roster} liveData={liveData} />
+        <TeamStatsSummary roster={roster} />
 
         {/* ── Role filter tabs ── */}
         <RoleSummaryBar
@@ -870,8 +798,6 @@ export default function TeamPlayersShowcase({ isAdmin }) {
               <PlayerCard
                 player={player}
                 index={i}
-                liveStatus={getLiveStatus(player)}
-                stats={getStats(player)}
                 editMode={editMode}
                 onEdit={setEditTarget}
                 onViewImage={setImagePlayer}
@@ -901,13 +827,6 @@ export default function TeamPlayersShowcase({ isAdmin }) {
             </button>
           </div>
         )}
-
-        {/* ── Live indicator ── */}
-        <div className="flex items-center justify-center gap-2 mt-8">
-          <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-          <span className="text-[10px] text-gray-500 uppercase tracking-widest">Live status updates every 30s</span>
-          <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-        </div>
       </div>
 
       {/* Edit modal */}

@@ -42,59 +42,6 @@ export const playerAPI = {
     }
   },
 
-  // Cast where-you-are vote (manual check-in)
-  castLocationVote: async (playerId, vote) => {
-    try {
-      const info = localStorage.getItem('volleytrack_player_info');
-      const playerInfo = info ? JSON.parse(info) : {};
-
-      const response = await api.post('/location-vote', {
-        player_id: playerId,
-        vote,
-        name: playerInfo.name || 'Unknown Player',
-        team: playerInfo.team || '',
-        jersey: playerInfo.jersey || 0,
-      });
-      return response.data;
-    } catch (error) {
-      console.error('Error casting location vote:', error);
-      throw error;
-    }
-  },
-
-  // Get all location votes and counts
-  getLocationVotes: async () => {
-    try {
-      const response = await api.get('/location-votes');
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching location votes:', error);
-      throw error;
-    }
-  },
-
-  // Get dashboard stats
-  getStats: async () => {
-    try {
-      const response = await api.get('/stats');
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching stats:', error);
-      throw error;
-    }
-  },
-
-  // Get ground status
-  getGroundStatus: async () => {
-    try {
-      const response = await api.get('/ground-status');
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching ground status:', error);
-      throw error;
-    }
-  },
-
   // Get player details
   getPlayerDetails: async (playerId) => {
     try {
@@ -103,26 +50,6 @@ export const playerAPI = {
     } catch (error) {
       console.error('Error fetching player details:', error);
       throw error;
-    }
-  },
-
-  // Health check
-  healthCheck: async () => {
-    try {
-      const response = await api.get('/health');
-      return response.data;
-    } catch (error) {
-      console.error('Error in health check:', error);
-      throw error;
-    }
-  },
-
-  // Mark player as offline (browser close / tab close)
-  goOffline: async (playerId) => {
-    try {
-      await api.post('/go-offline', { player_id: playerId });
-    } catch (error) {
-      // Silently fail — this is best-effort on browser close
     }
   },
 
@@ -220,9 +147,6 @@ export const storage = {
     return info ? JSON.parse(info) : null;
   },
   clearPlayerInfo: () => localStorage.removeItem('volleytrack_player_info'),
-
-  setLocationTracking: (enabled) => localStorage.setItem('volleytrack_tracking', enabled),
-  isLocationTrackingEnabled: () => localStorage.getItem('volleytrack_tracking') === 'true',
 
   setDarkMode: (enabled) => localStorage.setItem('volleytrack_dark_mode', enabled),
   isDarkModeEnabled: () => localStorage.getItem('volleytrack_dark_mode') !== 'false',
