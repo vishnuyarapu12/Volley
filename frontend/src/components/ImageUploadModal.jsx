@@ -8,6 +8,7 @@ export default function ImageUploadModal({ isOpen, onClose, onUploadSuccess }) {
   const [fileName, setFileName] = useState('');
   const [pictureName, setPictureName] = useState('');
   const [loading, setLoading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [error, setError] = useState('');
   const [isDragging, setIsDragging] = useState(false);
 
@@ -69,13 +70,16 @@ export default function ImageUploadModal({ isOpen, onClose, onUploadSuccess }) {
     }
     try {
       setLoading(true);
+      setUploadProgress(0);
       const playerId = storage.getPlayerId();
       const response = await playerAPI.uploadProfilePicture(
         playerId,
         fileInputRef.current.files[0],
-        pictureName.trim()
+        pictureName.trim(),
+        (percent) => setUploadProgress(percent)
       );
       if (response.success) {
+        setUploadProgress(100);
         resetState();
         onUploadSuccess?.();
       }
@@ -83,6 +87,7 @@ export default function ImageUploadModal({ isOpen, onClose, onUploadSuccess }) {
       setError('Upload failed. Please try again.');
     } finally {
       setLoading(false);
+      setUploadProgress(0);
     }
   };
 
@@ -183,6 +188,22 @@ export default function ImageUploadModal({ isOpen, onClose, onUploadSuccess }) {
               className="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-white/15 text-white placeholder-gray-500 focus:outline-none focus:border-yellow-400/50 focus:ring-1 focus:ring-yellow-400/30 transition-all text-sm"
             />
           </div>
+
+          {/* Upload Progress Bar */}
+          {loading && uploadProgress > 0 && (
+            <div className="space-y-1.5">
+              <div className="flex justify-between text-xs text-gray-400">
+                <span>Uploading to cloud storage…</span>
+                <span className="font-mono font-bold text-yellow-400">{uploadProgress}%</span>
+              </div>
+              <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-yellow-400 to-amber-500 rounded-full transition-all duration-300 ease-out"
+                  style={{ width: `${uploadProgress}%` }}
+                />
+              </div>
+            </div>
+          )}
 
           {/* Error */}
           {error && (

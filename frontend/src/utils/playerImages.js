@@ -21,14 +21,24 @@ for (const [path, mod] of Object.entries(rawModules)) {
 /**
  * Look up a player image by name or filename.
  * Returns the imported image URL or undefined if not found.
+ *
+ * Supports:
+ * - Full Supabase Storage URLs (https://xxx.supabase.co/storage/v1/...)
+ * - Full external URLs (https://...)
+ * - Backend API paths (/api/uploads/...)
+ * - Local image names (e.g. "Bharath" or "Bharath.jpeg")
  */
 export function getPlayerImage(nameOrFilename) {
   if (!nameOrFilename) return undefined;
 
-  // If it's already a full URL or an API upload path, use it directly
-  if (nameOrFilename.startsWith('http') || nameOrFilename.startsWith('/api/uploads/')) {
-    // If it's a relative API path and we have VITE_API_URL, prepend it
-    if (nameOrFilename.startsWith('/api/') && import.meta.env.VITE_API_URL) {
+  // Full URL (Supabase Storage or any external URL) — use directly
+  if (nameOrFilename.startsWith('http')) {
+    return nameOrFilename;
+  }
+
+  // Relative API upload path (legacy local uploads)
+  if (nameOrFilename.startsWith('/api/uploads/')) {
+    if (import.meta.env.VITE_API_URL) {
       return `${import.meta.env.VITE_API_URL.replace(/\/$/, '')}${nameOrFilename}`;
     }
     return nameOrFilename;

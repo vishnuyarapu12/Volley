@@ -97,10 +97,13 @@ export default function MomentsShowcase({ hero = false, isAdmin = false }) {
       let combined = [...defaultMoments];
       if (data?.moments) {
         const resolvedMoments = data.moments.map(m => {
-          if (m.src?.startsWith('/api/') && import.meta.env.VITE_API_URL) {
-            return { ...m, src: `${import.meta.env.VITE_API_URL.replace(/\/$/, '')}${m.src}` };
+          // Backend now returns full Supabase URLs in 'src'.
+          // Legacy /api/ paths still need the base URL prepended.
+          let src = m.src || m.url;
+          if (src?.startsWith('/api/') && import.meta.env.VITE_API_URL) {
+            src = `${import.meta.env.VITE_API_URL.replace(/\/$/, '')}${src}`;
           }
-          return m;
+          return { ...m, src };
         });
         combined = [...combined, ...resolvedMoments];
       }
@@ -139,7 +142,10 @@ export default function MomentsShowcase({ hero = false, isAdmin = false }) {
     if (!file) return;
     try {
       setIsUploading(true);
-      await playerAPI.uploadMoment(file);
+      await playerAPI.uploadMoment(file, (percent) => {
+        // Progress is available but we use a simple spinner for now
+        console.log(`Upload progress: ${percent}%`);
+      });
       await fetchMoments(true);
     } catch (err) {
       console.error("Upload failed", err);

@@ -15,7 +15,7 @@ const api = axios.create({
 
 // API endpoints
 export const playerAPI = {
-  // Join a team (name only — instant, no location)
+  // Join a team
   joinTeam: async (name, team, jersey = 0) => {
     try {
       const parsedJersey = Number.parseInt(String(jersey), 10);
@@ -70,8 +70,9 @@ export const playerAPI = {
     }
   },
 
-  // Upload profile picture with optional display name for showcase
-  uploadProfilePicture: async (playerId, file, pictureName = '') => {
+  // Upload profile picture with optional display name
+  // onProgress: (percent) => void — optional callback for upload progress
+  uploadProfilePicture: async (playerId, file, pictureName = '', onProgress = null) => {
     try {
       const formData = new FormData();
       formData.append('player_id', playerId);
@@ -81,9 +82,10 @@ export const playerAPI = {
       }
 
       const response = await api.post('/upload-profile-picture', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
+        headers: { 'Content-Type': 'multipart/form-data' },
+        onUploadProgress: onProgress
+          ? (e) => onProgress(Math.round((e.loaded * 100) / (e.total || 1)))
+          : undefined,
       });
       return response.data;
     } catch (error) {
@@ -125,7 +127,7 @@ export const playerAPI = {
     }
   },
 
-  // Get uploaded moments
+  // Get uploaded moments from the database
   getMoments: async () => {
     try {
       const response = await api.get('/moments');
@@ -136,20 +138,35 @@ export const playerAPI = {
     }
   },
 
-  // Upload a moment image
-  uploadMoment: async (file) => {
+  // Upload a moment image (to Supabase Storage via the backend)
+  // onProgress: (percent) => void — optional callback for upload progress
+  uploadMoment: async (file, onProgress = null) => {
     try {
       const formData = new FormData();
       formData.append('image', file);
       const response = await api.post('/upload-moment', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
+        headers: { 'Content-Type': 'multipart/form-data' },
+        onUploadProgress: onProgress
+          ? (e) => onProgress(Math.round((e.loaded * 100) / (e.total || 1)))
+          : undefined,
       });
       return response.data;
     } catch (error) {
       console.error('Error uploading moment:', error);
       throw error;
     }
-  }
+  },
+
+  // Delete a moment by ID
+  deleteMoment: async (momentId) => {
+    try {
+      const response = await api.delete(`/delete-moment/${momentId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error deleting moment:', error);
+      throw error;
+    }
+  },
 };
 
 // Local storage helpers

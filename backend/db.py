@@ -3,7 +3,6 @@ from psycopg2 import pool
 from psycopg2.extras import RealDictCursor
 import config
 import logging
-import json
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +34,7 @@ def release_db_connection(conn):
         db_pool.putconn(conn)
 
 def init_db():
-    """Create tables if they don't exist"""
+    """Create tables if they don't exist, and run safe migrations."""
     init_db_pool()
     
     if not db_pool:
@@ -44,7 +43,7 @@ def init_db():
     conn = get_db_connection()
     try:
         with conn.cursor() as cur:
-            # players table
+            # ── Players table ──────────────────────────────────────────────
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS players (
                     id VARCHAR(36) PRIMARY KEY,
@@ -52,9 +51,37 @@ def init_db():
                     role VARCHAR(100),
                     team VARCHAR(255),
                     jersey INTEGER,
-                    profile_picture VARCHAR(255),
+                    profile_picture TEXT,
                     picture_label VARCHAR(255)
                 );
+            """)
+
+            # ── Moments table (new — stores Supabase URLs) ────────────────
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS moments (
+                    id VARCHAR(36) PRIMARY KEY,
+                    filename VARCHAR(255) NOT NULL,
+                    url TEXT NOT NULL,
+                    storage_path VARCHAR(500),
+                    uploaded_at TIMESTAMP DEFAULT NOW()
+                );
+            """)
+
+            # ── Safe migrations ────────────────────────────────────────────
+            # Widen profile_picture to TEXT if it's still VARCHAR(255)
+            cur.execute("""
+                DO $$
+                BEGIN
+                    IF EXISTS (
+                        SELECT 1 FROM information_schema.columns
+                        WHERE table_name = 'players'
+                          AND column_name = 'profile_picture'
+                          AND data_type = 'character varying'
+                          AND character_maximum_length = 255
+                    ) THEN
+                        ALTER TABLE players ALTER COLUMN profile_picture TYPE TEXT;
+                    END IF;
+                END $$;
             """)
 
             conn.commit()
@@ -66,15 +93,13 @@ def init_db():
         release_db_connection(conn)
 
 def query_db(query, args=(), one=False):
-    """Execute query and fetch results as dict"""
+    """Execute query and fetch results as dict."""
     conn = get_db_connection()
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute(query, args)
             if query.strip().upper().startswith("SELECT"):
                 rv = cur.fetchall()
-                # psycopg2 returns datetime objects, but our app expects ISO strings in some places
-                # We'll let the application layer handle formatting
                 return (rv[0] if rv else None) if one else rv
             else:
                 conn.commit()
